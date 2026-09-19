@@ -6,13 +6,53 @@ import { App } from "./App.js";
 import { applyEffectPreset, removeEffect } from "./premiere.js";
 import "./styles.css";
 
+type PanelErrorBoundaryState = { error?: Error };
+
+class PanelErrorBoundary extends React.Component<
+  React.PropsWithChildren,
+  PanelErrorBoundaryState
+> {
+  state: PanelErrorBoundaryState = {};
+
+  static getDerivedStateFromError(error: Error): PanelErrorBoundaryState {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo): void {
+    console.error(
+      "MoneyMoves panel failed to render",
+      error,
+      info.componentStack,
+    );
+  }
+
+  render(): React.ReactNode {
+    if (this.state.error) {
+      return (
+        <main className="startup-error">
+          <p className="eyebrow">MONEYMOVES STARTUP ERROR</p>
+          <h1>The panel could not render.</h1>
+          <p>{this.state.error.message}</p>
+          <p className="hint">
+            Reload the plugin from UXP Developer Tool. If this persists, copy
+            this message from the UDT Logs panel.
+          </p>
+        </main>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function mount(): void {
   const rootElement = document.getElementById("root");
   if (!rootElement || rootElement.dataset.mounted === "true") return;
   rootElement.dataset.mounted = "true";
   createRoot(rootElement).render(
     <React.StrictMode>
-      <App />
+      <PanelErrorBoundary>
+        <App />
+      </PanelErrorBoundary>
     </React.StrictMode>,
   );
 }

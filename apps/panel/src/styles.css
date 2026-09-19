@@ -54,6 +54,28 @@ button:disabled {
   padding: 12px;
 }
 
+.startup-error {
+  display: grid;
+  gap: 10px;
+  min-width: 280px;
+  padding: 18px;
+  color: #fff6d8;
+  background: #0b0b16;
+}
+
+.startup-error h1,
+.startup-error p {
+  margin: 0;
+}
+
+.startup-error p:not(.eyebrow):not(.hint) {
+  padding: 10px;
+  color: #ffb0a7;
+  border: 1px solid #7d302b;
+  background: #27151a;
+  overflow-wrap: anywhere;
+}
+
 .masthead,
 .section-heading,
 .health-card,
