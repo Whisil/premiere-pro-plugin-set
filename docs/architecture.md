@@ -2,12 +2,12 @@
 
 ## Product boundary
 
-MoneyMoves is four cooperating deliverables, not one monolithic Premiere plugin:
+MoneyMoves has three active cooperating deliverables and one frozen prototype, not one monolithic Premiere plugin:
 
 1. A Manifest v5 UXP panel owns editor interaction and undoable timeline actions.
 2. Native MediaCore effect bundles own real-time pixel processing.
 3. A loopback-only renderer creates deterministic map and ASCII media outside the Premiere process.
-4. A versioned MOGRT library provides editable charts and infographics.
+4. The existing MOGRT prototype is retained for future charts work but is deferred from active development.
 
 This split keeps Premiere responsive, lets GPU effects keep frames resident, and makes generated media reproducible from validated job specifications.
 
@@ -34,7 +34,7 @@ Only the UXP panel mutates a Premiere project. The renderer cannot reach the pro
 - Renderer API: `/health`, `/v1/maps`, `/v1/ascii-titles`, and `/v1/jobs/:id`.
 - Generated assets are immutable and receive a job-id prefix.
 
-Changing a schema, parameter order, match name, or MOGRT exposed property is a migration event. Additive API changes remain within schema version 1; incompatible changes require a new endpoint/schema version and migration notes.
+Changing a schema, parameter order, match name, or exposed MOGRT property is a migration event. Additive API changes remain within schema version 1; incompatible changes require a new endpoint/schema version and migration notes. No MOGRT interface changes are made while charts are deferred.
 
 ## Native effect implementation
 

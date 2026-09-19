@@ -6,10 +6,11 @@
 - Xcode 16.2 or newer selected with `xcode-select`.
 - UXP Developer Tool 2.2 or newer.
 - Adobe After Effects/Premiere SDK headers accepted and stored outside this repository.
+- `just` 1.58.0 for native bundle build and packaging recipes.
 - Node 24.11.1, pnpm 11.24.0, Rust 1.96, and FFmpeg with `prores_ks`.
-- After Effects 24.3 for MOGRT authoring only.
+- After Effects 25.6.4 only when maintaining the frozen MOGRT prototype.
 
-The initial environment audit found Xcode 16.0 selected, no UXP Developer Tool, no `just`, and no Adobe SDK headers. Those are Phase 0 blockers for Adobe-host validation, not for the headless workspace.
+The 2026-09-19 follow-up audit found Xcode 16.4, UXP Developer Tool 2.3, the After Effects SDK, and the Premiere Pro C++ SDK 26.0 installed. The build uses the Premiere 26 headers but targets and validates only the v1 GPU interfaces available in Premiere Pro 25.6.4. Native video effects require both SDKs because Premiere's GPU extension supplements an After Effects effect entry point and CPU fallback.
 
 ## Bootstrap
 
@@ -30,7 +31,14 @@ After a production build, run `scripts/install-renderer.sh`. It installs a per-u
 
 ## Native effects
 
-Set `ADOBE_AE_SDK_ROOT` and `ADOBE_PREMIERE_SDK_ROOT` to licensed SDK locations when the native adapter exists. Never commit those SDKs. Development bundles install under:
+Set the SDK roots to the installed licensed SDKs. Never commit them:
+
+```sh
+export AESDK_ROOT="/Users/davidgajdamaka/Developer/AdobeSDKs/AfterEffectsSDK"
+export PRSDK_ROOT="/Users/davidgajdamaka/Desktop/code/premiere-editor-tools/Premiere Pro 26.0 C++ SDK"
+```
+
+`prgpu-build` 0.2.0 downloads its pinned Slang 2026.8 SDK under `target/.slang-sdk/`; a global `slangc` installation is not required. Development bundles install under:
 
 ```text
 ~/Library/Application Support/Adobe/Common/Plug-ins/7.0/MediaCore/
@@ -43,6 +51,6 @@ codesign --force --deep --sign - path/to/MoneyMoves.plugin
 codesign --verify --deep --strict path/to/MoneyMoves.plugin
 ```
 
-## MOGRT authoring
+## Frozen MOGRT prototype
 
-Open After Effects, choose File > Scripts > Run Script File, and select `mogrts/scripts/build-vertical-bar.jsx`. Set `MONEYMOVES_MOGRT_OUTPUT` before launching After Effects to override the output folder. Normal Premiere editing does not require After Effects.
+The working vertical-bar generator remains in `mogrts/scripts/build-vertical-bar.jsx`, but chart development is deferred. Maps and ASCII titles do not use After Effects.
