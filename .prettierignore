@@ -1,0 +1,8 @@
+**/dist
+**/node_modules
+target
+docs/ai-agent-plan.md
+Cargo.lock
+pnpm-lock.yaml
+mogrts/scripts/*.jsx
+

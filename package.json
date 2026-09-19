@@ -1,0 +1,25 @@
+{
+  "name": "moneymoves-premiere-toolkit",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.24.0",
+  "engines": {
+    "node": ">=24.11.1"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "check": "pnpm --filter @moneymoves/contracts build && pnpm -r check && cargo fmt --all --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace",
+    "test": "pnpm -r test && cargo test --workspace",
+    "format": "prettier --write . && cargo fmt --all",
+    "format:check": "prettier --check . && cargo fmt --all --check",
+    "dev:panel": "pnpm --filter @moneymoves/panel dev",
+    "dev:renderer": "pnpm --filter @moneymoves/render-service dev",
+    "build:panel": "pnpm --filter @moneymoves/panel build",
+    "build:renderer": "pnpm --filter @moneymoves/render-service build"
+  },
+  "devDependencies": {
+    "prettier": "3.6.2",
+    "typescript": "5.9.2",
+    "vitest": "3.2.4"
+  }
+}
