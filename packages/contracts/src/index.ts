@@ -17,7 +17,9 @@ export const brandTokensSchema = z.object({
   name: z.string().min(1).max(64),
   typography: z.object({
     display: z.string().min(1).max(128),
+    editorial: z.string().min(1).max(128),
     mono: z.string().min(1).max(128),
+    pixel: z.string().min(1).max(128),
   }),
   palettes: z.array(paletteSchema).min(1),
 });

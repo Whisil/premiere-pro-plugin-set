@@ -122,7 +122,11 @@ function mapSvg(
       if (!d) return "";
       const id = String(item.id).padStart(3, "0");
       const isSelected = selectedIds.has(id);
-      return `<path d="${d}" pathLength="1" fill="${isSelected ? accent : base}" fill-opacity="${isSelected ? (fillOpacity * pulse).toFixed(3) : "0.20"}" stroke="${isSelected ? accent : text}" stroke-opacity="${isSelected ? "1" : "0.28"}" stroke-width="${isSelected ? 4 : 1.5}" stroke-dasharray="1" stroke-dashoffset="${isSelected ? (1 - borderProgress).toFixed(4) : 0}" vector-effect="non-scaling-stroke"/>`;
+      const borderAnimation =
+        isSelected && request.animation === "border-draw"
+          ? ` pathLength="1" stroke-dasharray="1" stroke-dashoffset="${(1 - borderProgress).toFixed(4)}"`
+          : "";
+      return `<path d="${d}" fill="${isSelected ? accent : base}" fill-opacity="${isSelected ? (fillOpacity * pulse).toFixed(3) : "0.20"}" stroke="${isSelected ? accent : text}" stroke-opacity="${isSelected ? "1" : "0.28"}" stroke-width="${isSelected ? 4 : 1.5}" vector-effect="non-scaling-stroke"${borderAnimation}/>`;
     })
     .join("\n");
 
@@ -131,7 +135,25 @@ function mapSvg(
         .map((item, index) => {
           const point: [number, number] = projectedCentroids[index] ?? target;
           const record = countryByNumeric.get(String(item.id).padStart(3, "0"));
-          return `<text x="${point[0]}" y="${point[1] - 24}" text-anchor="middle" fill="${text}" stroke="${base}" stroke-width="8" paint-order="stroke" font-family="Arial Black, Arial, sans-serif" font-size="42" font-weight="900" letter-spacing="2">${escapeXml(record?.name.common ?? request.countries[index] ?? "")}</text>`;
+          const label = escapeXml(
+            (
+              record?.name.common ??
+              request.countries[index] ??
+              ""
+            ).toUpperCase(),
+          );
+          const x = point[0];
+          const inverseZoom = 1 / zoom;
+          const labelSize = Math.min(
+            46,
+            request.width / Math.max(10, label.length * 0.72),
+          );
+          const y = point[1] - 24 * inverseZoom;
+          return `<g font-family="Peace Sans, Arial Black, sans-serif" font-size="${labelSize * inverseZoom}" font-weight="900" letter-spacing="${inverseZoom}">
+            <text x="${x + 5 * inverseZoom}" y="${y + 2 * inverseZoom}" text-anchor="middle" fill="#00E7FF" opacity="0.88">${label}</text>
+            <text x="${x - 5 * inverseZoom}" y="${y - 2 * inverseZoom}" text-anchor="middle" fill="#F229D4" opacity="0.88">${label}</text>
+            <text x="${x}" y="${y}" text-anchor="middle" fill="${text}" stroke="${base}" stroke-width="${7 * inverseZoom}" paint-order="stroke">${label}</text>
+          </g>`;
         })
         .join("\n")
     : "";

@@ -53,7 +53,7 @@ function asciiSvg(
     request.animation === "flicker" ? 0.82 + seededUnit(frame + 31) * 0.18 : 1;
   const foreground = palette.colors[0] ?? "#F4FF3A";
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${request.width}" height="${request.height}" viewBox="0 0 ${request.width} ${request.height}">
-    <g fill="${foreground}" opacity="${flicker.toFixed(3)}" font-family="Menlo, Monaco, monospace" font-size="${fontSize}" font-weight="700" xml:space="preserve">
+    <g fill="${foreground}" opacity="${flicker.toFixed(3)}" font-family="LT Superior Mono, Menlo, Monaco, monospace" font-size="${fontSize}" font-weight="700" xml:space="preserve">
       ${lines.map((line, index) => `<text x="50%" y="${(request.height - totalHeight) / 2 + (index + 1) * lineHeight}" text-anchor="middle">${escapeXml(line || " ")}</text>`).join("\n")}
     </g>
   </svg>`;
