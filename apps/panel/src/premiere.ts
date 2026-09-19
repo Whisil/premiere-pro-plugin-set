@@ -9,6 +9,25 @@ const FRAME_GATE_PARAM_INDEX: Record<string, number> = {
 };
 
 const MODE_VALUE: Record<string, number> = { head: 1, tail: 2, both: 3 };
+const PREMIERE_TICKS_PER_SECOND = 254_016_000_000;
+
+export interface SequenceFormat {
+  name: string;
+  width: number;
+  height: number;
+  fps: number;
+}
+
+export function fpsFromTimebase(timebase: string): number {
+  const ticksPerFrame = Number(timebase);
+  const fps = PREMIERE_TICKS_PER_SECOND / ticksPerFrame;
+  if (!Number.isFinite(fps) || fps < 1 || fps > 120) {
+    throw new Error(
+      `Premiere returned an invalid sequence timebase: ${timebase}`,
+    );
+  }
+  return Math.round(fps * 1000) / 1000;
+}
 
 function getPremiere(): any {
   if (typeof require !== "function") {
@@ -30,6 +49,25 @@ async function getContext(): Promise<{
   const sequence = await project.getActiveSequence();
   if (!sequence) throw new Error("Open a sequence first.");
   return { ppro, project, sequence };
+}
+
+export async function getActiveSequenceFormat(): Promise<SequenceFormat> {
+  const { sequence } = await getContext();
+  const [frameSize, timebase] = await Promise.all([
+    sequence.getFrameSize(),
+    sequence.getTimebase(),
+  ]);
+  const width = Math.round(Number(frameSize.width));
+  const height = Math.round(Number(frameSize.height));
+  if (width < 1 || height < 1) {
+    throw new Error("Premiere returned an invalid active-sequence frame size.");
+  }
+  return {
+    name: sequence.name ?? "Active sequence",
+    width,
+    height,
+    fps: fpsFromTimebase(String(timebase)),
+  };
 }
 
 async function selectedVideoClips(ppro: any, sequence: any): Promise<any[]> {
@@ -183,9 +221,16 @@ export async function hostDiagnostics(): Promise<Record<string, string>> {
   try {
     const ppro = getPremiere();
     const project = await ppro.Project.getActiveProject();
+    const sequence = await project?.getActiveSequence();
+    const availableEffects = await ppro.VideoFilterFactory.getMatchNames();
+    const moneyMovesEffects = availableEffects.filter((name: string) =>
+      name.startsWith("com.moneymoves."),
+    ).length;
     return {
       host: "Premiere Pro",
       project: project?.name ?? "No active project",
+      sequence: sequence?.name ?? "No active sequence",
+      nativeEffects: `${moneyMovesEffects}/15`,
       api: "Available",
     };
   } catch (error) {

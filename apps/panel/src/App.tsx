@@ -12,6 +12,7 @@ import {
   applyEffect,
   applyEffectPreset,
   chooseAndInsertMogrt,
+  getActiveSequenceFormat,
   hostDiagnostics,
   importGeneratedFile,
   removeEffect,
@@ -48,12 +49,14 @@ export function App() {
   const [width, setWidth] = useState(3840);
   const [height, setHeight] = useState(2160);
   const [fps, setFps] = useState(30);
+  const [sequenceName, setSequenceName] = useState("Manual settings");
   const [paletteId, setPaletteId] = useState("moneymoves-core");
   const [token, setToken] = useState(getRendererToken());
   const [diagnostics, setDiagnostics] = useState<Record<string, string>>({});
 
   useEffect(() => {
     void refreshDiagnostics();
+    void syncOutputToSequence(true);
   }, []);
 
   const filteredEffects = useMemo(
@@ -93,6 +96,24 @@ export function App() {
     ]);
     setRendererOnline(online);
     setDiagnostics(host);
+  }
+
+  async function syncOutputToSequence(silent = false): Promise<void> {
+    try {
+      const format = await getActiveSequenceFormat();
+      setWidth(format.width);
+      setHeight(format.height);
+      setFps(format.fps);
+      setSequenceName(format.name);
+      if (!silent) {
+        setNotice({
+          tone: "success",
+          message: `Output matched ${format.name}: ${format.width}×${format.height} at ${format.fps} fps.`,
+        });
+      }
+    } catch (error) {
+      if (!silent) throw error;
+    }
   }
 
   async function renderAndImport(
@@ -265,10 +286,16 @@ export function App() {
             />
           </label>
         </div>
-        <p className="hint">
-          Match the active sequence. Automatic 25.6 sequence-rate discovery is
-          pending host validation.
-        </p>
+        <div className="actions output-actions">
+          <button
+            className="quiet"
+            disabled={busy}
+            onClick={() => void run(() => syncOutputToSequence())}
+          >
+            Use Active Sequence
+          </button>
+          <span className="hint">{sequenceName}</span>
+        </div>
       </section>
 
       <section>
