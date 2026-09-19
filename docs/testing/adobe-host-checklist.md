@@ -2,6 +2,10 @@
 
 Record evidence in `docs/validation/phase-0-results.md`; include a project archive and exported reference frames outside Git when media is large.
 
+## Phase 0 feasibility
+
+- Follow `docs/validation/phase-0-host-runbook.md` for RGB Shift batch undo, Metal/software parity, and the ten-frame ProRes alpha round trip.
+
 ## Panel and Frame Gate
 
 - Select 20 video clips with linked audio and apply Throttle Both.
@@ -24,7 +28,9 @@ Record evidence in `docs/validation/phase-0-results.md`; include a project archi
 - Stop/restart the renderer during a job and verify a useful panel error.
 - Composite ten ProRes 4444 frames over solid red and checkerboard, then round-trip through AME.
 
-## MOGRT
+## Deferred MOGRT checks
+
+These checks are retained for Phase 7 and are not part of the active release sequence.
 
 - Insert at the playhead on a sequence with locked and unlocked video tracks.
 - Confirm every exposed property survives save/reopen and duration changes.

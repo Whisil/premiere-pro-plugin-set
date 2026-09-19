@@ -24,6 +24,8 @@ Status values are `done`, `in progress`, `blocked`, `queued`, and `deferred`. A 
 - After Effects vertical-bar authoring script and local renderer lifecycle assets.
 - Channel-reference style inventory, production typography roles, and reference-derived palettes.
 - CPU/Slang reference implementations for Halftone, Dot Matrix, and Dither.
+- Loadable arm64 RGB Shift bundle with AE-style software and Premiere Metal entry points, PiPL packaging, ad-hoc signing, and per-user installation.
+- Reproducible ten-frame ProRes 4444 alpha feasibility artifact.
 
 ## Phase 0 gates
 
