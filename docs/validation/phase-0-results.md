@@ -23,11 +23,12 @@ Environment audit on 2026-09-19:
 
 ### Native host adapter
 
-- Implementation commit: `fb4a608`.
+- Initial implementation commit: `fb4a608`; runtime metadata/16-bit correction: `0596150`.
 - Command: `just native-rgb-install`.
 - Build target: `aarch64-apple-darwin`.
 - Build artifact: `target/debug/MoneyMoves RGB Shift.plugin`.
 - Installed artifact: `/Users/davidgajdamaka/Library/Application Support/Adobe/Common/Plug-ins/7.0/MediaCore/MoneyMoves RGB Shift.plugin`.
+- Installed executable SHA-256: `ab7293d107419be0388513a4d24c5156c5250b9ac1286ecbacc33457c1c993c6`.
 - Ad-hoc signature verification: pass.
 - Mach-O architecture: arm64.
 - Exported host symbols: `_EffectMain` and `_xGPUFilterEntry`.
