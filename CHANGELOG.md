@@ -7,3 +7,4 @@
 - Establish the reference-derived MoneyMoves palettes and typography across the panel, renderer, and first MOGRT.
 - Add deterministic Halftone, Dot Matrix, and Dither CPU reference kernels and Slang implementations.
 - Record the installed Adobe SDK toolchain, keep the working vertical-bar MOGRT frozen, and defer further chart development.
+- Add the pinned RGB Shift Adobe host adapter, Slang CPU/Metal pipeline, Apple-Silicon bundle packaging, toolchain validation, and ad-hoc signing/install recipes.

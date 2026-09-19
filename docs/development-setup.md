@@ -51,6 +51,16 @@ codesign --force --deep --sign - path/to/MoneyMoves.plugin
 codesign --verify --deep --strict path/to/MoneyMoves.plugin
 ```
 
+The checked-in recipes validate the toolchain, build only for Apple Silicon, package the PiPL resources, sign the bundle, and install it per user:
+
+```sh
+just native-validate
+just native-rgb-build
+just native-rgb-install
+```
+
+`prgpu-build` 0.2.0 has a crates.io include-path defect for its bundled `vekl` shaders. The RGB Shift build script resolves the `vekl` copy belonging to the exact pinned `prgpu` crate. Set `PRGPU_VEKL_ROOT` only when using a vendored Cargo registry.
+
 ## Frozen MOGRT prototype
 
 The working vertical-bar generator remains in `mogrts/scripts/build-vertical-bar.jsx`, but chart development is deferred. Maps and ASCII titles do not use After Effects.

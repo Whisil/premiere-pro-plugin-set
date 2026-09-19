@@ -1,8 +1,18 @@
 # Native effects
 
-`core` contains deterministic CPU reference implementations and `shaderbench` provides a host-independent visual test loop. Frame Gate, RGB Shift, Halftone, Dot Matrix, and Dither have reference implementations; the pixel effects also have Slang kernels in `shaders` for the eventual `prgpu` dispatch path.
+`core` contains deterministic CPU reference implementations and `shaderbench` provides a host-independent visual test loop. Frame Gate, RGB Shift, Halftone, Dot Matrix, and Dither have reference implementations; the pixel effects also have Slang kernels in `shaders`.
 
-The Adobe bundle crate is deliberately gated until the proprietary After Effects and Premiere SDK headers have been downloaded and the Phase 0 host spike can validate exact API behavior. Do not invent or vendor Adobe headers. The intended pinned baseline is `after-effects = 0.4.0` and `prgpu/prgpu-build = 0.2.0`, with both the AE software renderer and `premiere::define_gpu_filter!` GPU entrypoint wired from the first host-loaded effect.
+`plugins/rgb-shift` is the first loadable Adobe bundle. It pins `exaecut-after-effects` and `exaecut-premiere` 0.5.0 with `prgpu` and `prgpu-build` 0.2.0. One declarative pipeline supplies an AE-style CPU entry point and Premiere's additional Metal GPU entry point. Its permanent match name is `com.moneymoves.rgb-shift`.
+
+Validate, build, package, sign, and install the Apple-Silicon development bundle:
+
+```sh
+just native-validate
+just native-rgb-build
+just native-rgb-install
+```
+
+The packaged artifact is `target/debug/MoneyMoves RGB Shift.plugin`. The install recipe copies it to the per-user MediaCore directory and applies an ad-hoc signature. Restart Premiere after every native bundle replacement.
 
 Run the reference harness:
 

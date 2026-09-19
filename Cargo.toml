@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
   "native/core",
+  "native/plugins/rgb-shift",
   "native/shaderbench",
 ]
 
@@ -18,4 +19,8 @@ clap = { version = "4.5.47", features = ["derive"] }
 image = "0.25.8"
 serde = { version = "1.0.225", features = ["derive"] }
 serde_json = "1.0.145"
-
+after-effects = { package = "exaecut-after-effects", version = "=0.5.0" }
+premiere = { package = "exaecut-premiere", version = "=0.5.0" }
+prgpu = "=0.2.0"
+prgpu-build = "=0.2.0"
+bytemuck = "1.23.2"
