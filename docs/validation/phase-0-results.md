@@ -44,6 +44,17 @@ This proves packaging and registration shape, not that Premiere loaded or render
 
 This proves transaction construction, not Premiere's host undo behavior or the two-second timing target.
 
+### Panel-first workflow
+
+- The panel now persists its selected workspace, effect, and palette; it can be
+  docked or floated by Premiere.
+- Effects are checked against Premiere's discovered `com.moneymoves.*` match
+  names before their controls are enabled.
+- The adapter unit tests cover 20-clip apply/remove transactions, mixed values,
+  batch parameter updates, and selection-event cleanup.
+- The remaining manual host gate must confirm that Diagnostics discovers the
+  installed bundle and that the new Effects workflow produces one native Undo.
+
 ### ProRes alpha input artifact
 
 - Generator commit: `30aff15`.

@@ -9,7 +9,7 @@ Use Premiere Pro 25.6.4 on the target M3 Pro. Keep the validation project and ex
 3. Start Premiere 25.6.4 and open a test project.
 4. Confirm **MoneyMoves RGB Shift** appears under the **MoneyMoves** video-effects category.
 5. Build the panel with `pnpm build:panel`, load `apps/panel/dist/manifest.json` in UXP Developer Tool, and open the MoneyMoves Toolkit panel.
-6. Refresh Diagnostics. It must report at least `1/15` native effects and must not report the browser-preview fallback.
+6. In **Diagnostics**, refresh Host health. It must report at least `1/15` native effects, list `com.moneymoves.rgb-shift`, and must not report the browser-preview fallback.
 
 If the effect is absent, preserve Premiere's `Plugin Loading.log`, the installed bundle, and the output of `codesign --verify --deep --strict` before rebuilding.
 
@@ -17,11 +17,12 @@ If the effect is absent, preserve Premiere's `Plugin Loading.log`, the installed
 
 1. Create or open a sequence containing at least 20 video clips.
 2. Select exactly 20 video clip items.
-3. Start a stopwatch and use **Effects → RGB Shift → Apply** in the panel.
+3. Start a stopwatch, open **Effects**, choose **RGB Shift**, and use **Apply** in the panel.
 4. Stop timing after Premiere completes the transaction. The target is under two seconds.
 5. Confirm all 20 selected clips contain one MoneyMoves RGB Shift instance.
 6. Invoke Undo once. All 20 instances must disappear together.
 7. Apply again, then use the panel's **Remove** action. One Undo must restore all 20 instances together.
+8. Set RGB Shift **Amount** to `42` in the panel. Confirm it updates all selected clips together, then use one Undo to restore the prior values.
 
 Record clip count, elapsed time, undo result, project path, and reviewer. The automated unit test is supporting evidence only.
 

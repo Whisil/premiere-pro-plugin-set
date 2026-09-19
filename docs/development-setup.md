@@ -23,7 +23,17 @@ cargo run -p shaderbench -- --help
 
 Start the renderer with `pnpm dev:renderer`. Its first start creates a token at `~/Library/Application Support/MoneyMoves/renderer-token`. Copy that value into the panel Diagnostics field. Development mode uses `development-token` explicitly.
 
-Build the panel with `pnpm build:panel`, then add `apps/panel/dist/manifest.json` to UXP Developer Tool and load it in Premiere. Browser preview is useful for layout but cannot exercise Premiere APIs.
+Build the panel with `pnpm build:panel`, then add `apps/panel/dist/manifest.json`
+to UXP Developer Tool and load it in Premiere. Open it from **Window → UXP
+Plugins → MoneyMoves Toolkit**. It is one persistent panel: drag its title bar
+to dock it, or float it onto another display. After a rebuild, use UXP
+Developer Tool's reload action and reopen the panel.
+
+The panel's **Home**, **Effects**, **Generate**, and **Diagnostics** views are
+the normal editor workflow. Diagnostics must list the native bundle before an
+effect is enabled; use Effects to apply, remove, adjust, and keyframe a
+MoneyMoves effect on the selected video clips. Browser preview is useful for
+layout but cannot exercise Premiere APIs.
 
 ## Renderer LaunchAgent
 
