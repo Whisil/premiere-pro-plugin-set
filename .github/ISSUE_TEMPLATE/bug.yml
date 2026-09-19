@@ -1,0 +1,25 @@
+name: Bug report
+description: Report a reproducible MoneyMoves failure
+body:
+  - type: textarea
+    id: result
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Premiere, macOS, and MoneyMoves versions
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs, project details, frames, or crash report

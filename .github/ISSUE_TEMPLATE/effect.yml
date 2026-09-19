@@ -1,0 +1,25 @@
+name: Effect milestone
+description: Track one effect from visual target to host acceptance
+body:
+  - type: input
+    id: effect
+    attributes:
+      label: Effect and stable match name
+    validations:
+      required: true
+  - type: textarea
+    id: reference
+    attributes:
+      label: Visual reference and acceptance notes
+    validations:
+      required: true
+  - type: checkboxes
+    id: gates
+    attributes:
+      label: Gates
+      options:
+        - label: Parameter contract approved
+        - label: CPU reference and goldens pass
+        - label: Metal and CPU host paths pass
+        - label: Premiere lifecycle checklist passes
+        - label: M3 Pro performance budget passes
