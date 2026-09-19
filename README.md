@@ -1,10 +1,20 @@
 # MoneyMoves Premiere Toolkit
 
-A macOS/Apple-Silicon toolkit for Adobe Premiere Pro 25.6.4. The repository contains a UXP workflow panel, native-effect reference kernels and test harness, a local map/ASCII renderer, and a frozen MOGRT prototype.
+A macOS/Apple-Silicon toolkit for Adobe Premiere Pro 25.6.4. Its primary
+interface is one UXP workflow panel that can be docked in Premiere or floated
+onto another display. The repository also contains native-effect reference
+kernels and test harnesses, a local map/ASCII renderer, and a frozen MOGRT
+prototype.
 
 ## Current status
 
-The repository foundation and first vertical slices are implemented. RGB Shift now builds as an arm64 Adobe plugin with software and Premiere GPU entry points, packages with PiPL metadata, signs successfully, and installs per user. Premiere 25.6.4 host rendering and undo validation remain the active Phase 0 gates; see [Development setup](docs/development-setup.md).
+The repository foundation and first vertical slices are implemented. RGB Shift
+now builds as an arm64 Adobe plugin with software and Premiere GPU entry
+points, packages with PiPL metadata, signs successfully, and installs per user.
+The panel-first Phase 0 work adds contextual Home, Effects, Generate, and
+Diagnostics workflows before Frame Gate begins. Premiere 25.6.4 host rendering
+and undo validation remain the active Phase 0 gates; see [Development
+setup](docs/development-setup.md).
 
 ## Commands
 

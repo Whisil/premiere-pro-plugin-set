@@ -4,7 +4,8 @@
 
 MoneyMoves has three active cooperating deliverables and one frozen prototype, not one monolithic Premiere plugin:
 
-1. A Manifest v5 UXP panel owns editor interaction and undoable timeline actions.
+1. One persistent, dockable/floating Manifest v5 UXP panel owns all normal
+   editor interaction and undoable timeline actions.
 2. Native MediaCore effect bundles own real-time pixel processing.
 3. A loopback-only renderer creates deterministic map and ASCII media outside the Premiere process.
 4. The existing MOGRT prototype is retained for future charts work but is deferred from active development.
@@ -26,9 +27,16 @@ Premiere renderer --> MoneyMoves native effect --> Premiere GPU suite --> Metal
 
 Only the UXP panel mutates a Premiere project. The renderer cannot reach the project and accepts no arbitrary command, path, URL, or shader input. Output names are constrained by the shared schema and all output is rooted under the configured generated-media directory.
 
+The panel is the primary MoneyMoves workspace. It presents Home, Effects,
+Generate, and Diagnostics views in one resizable panel, including selection
+state, effect controls, presets, palettes, keyframes, generator jobs, and
+health information. Native effects remain the project and renderer source of
+truth; Premiere's Effect Controls stays available for interoperability and
+advanced curve editing only.
+
 ## Stable interfaces
 
-- Schema version: `packages/contracts/src/index.ts`.
+- Schema version and versioned effect UI registry: `packages/contracts/src/index.ts`.
 - Brand/palette source of truth: `assets/brand/tokens.json` (mirrored into the contracts package for bundling).
 - Native match names: `com.moneymoves.*`; they must never be renamed after release.
 - Renderer API: `/health`, `/v1/maps`, `/v1/ascii-titles`, and `/v1/jobs/:id`.
@@ -43,6 +51,8 @@ Changing a schema, parameter order, match name, or exposed MOGRT property is a m
 Each production effect must have:
 
 - a stable parameter manifest and explicit parameter indices;
+- a panel definition for labels, types, bounds, presets, palette binding, and
+  keyframe support;
 - a CPU implementation used for fallback and golden tests;
 - a GPU kernel with numerically comparable output;
 - alpha-preserving 8/16/32-bit paths supported by the host;

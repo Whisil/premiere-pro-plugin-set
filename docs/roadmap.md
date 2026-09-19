@@ -15,6 +15,20 @@ Status values are `done`, `in progress`, `blocked`, `queued`, and `deferred`. A 
 | 8. Advanced effects         | queued      | LinoCut, Voxel, and Blob Tracking approved independently      |
 | 9. Release hardening        | queued      | Soak edit passes; signed local release and recovery docs ship |
 
+## Panel-first product rule
+
+MoneyMoves is one persistent Premiere UXP panel, not a collection of separate
+utilities. Editors can dock, float, resize, and place the panel on a second
+display while it remains connected to the active Premiere project. Every
+editor-facing feature is complete only when it has a usable panel workflow:
+apply/remove, controls, presets where applicable, errors, and diagnostics.
+
+The panel is organized into **Home**, **Effects**, **Generate**, and
+**Diagnostics** views. Native Effect Controls remains an interoperability and
+advanced-curve fallback, but normal MoneyMoves work must not require it.
+Build, signing, installation, and automated-test commands remain developer
+tooling outside Premiere.
+
 ## Current implementation
 
 - Shared schemas, tokens, effect IDs, and Frame Gate presets.
@@ -39,6 +53,9 @@ The working vertical-bar MOGRT is retained as a frozen prototype, but charts are
 
 ## Definition of done for an effect
 
+- A complete panel surface exposes its availability, apply/remove actions,
+  parameter controls, presets, palettes, keyframes where supported, and clear
+  selection/host errors.
 - Parameter contract, bounds, defaults, labels, keyframing, and migration behavior are documented.
 - CPU and GPU implementations pass defaults/extremes, alpha, gradient, skin, noise, and palette goldens.
 - Save/reopen, copy/paste, nest, trim, speed-change, disable/remove, preview resolution, and AME export pass.
@@ -47,4 +64,10 @@ The working vertical-bar MOGRT is retained as a frozen prototype, but charts are
 
 ## Release sequence
 
-Work vertically. Complete Phase 0 before Frame Gate, then deliver palette effects, multi-pass effects, ASCII, and maps in that order. Maps use the local renderer and never require After Effects. The vertical-bar MOGRT and generic insertion action remain frozen until charts are explicitly resumed. Advanced effects remain separate milestones because their tracking/geometry work has distinct failure modes.
+Work vertically. Complete the panel-first Phase 0 foundation before Frame Gate,
+then deliver palette effects, multi-pass effects, ASCII, and maps in that
+order. Each vertical slice includes its native/renderer work and its finished
+panel workflow. Maps use the local renderer and never require After Effects.
+The vertical-bar MOGRT and generic insertion action remain frozen until charts
+are explicitly resumed. Advanced effects remain separate milestones because
+their tracking/geometry work has distinct failure modes.
