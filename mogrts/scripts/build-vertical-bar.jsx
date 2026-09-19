@@ -1,5 +1,15 @@
-/* MoneyMoves Vertical Bar MOGRT generator for After Effects 24.3. */
+/* MoneyMoves Vertical Bar MOGRT generator for After Effects 24.3+. */
 (function buildMoneyMovesVerticalBar() {
+    var nonInteractive = $.getenv("MONEYMOVES_NONINTERACTIVE") === "1";
+
+    function report(message) {
+        if (nonInteractive) {
+            $.writeln(message);
+        } else {
+            alert(message);
+        }
+    }
+
     app.beginUndoGroup("Build MoneyMoves Vertical Bar");
     try {
         if (!app.project) app.newProject();
@@ -18,7 +28,7 @@
         var comp = app.project.items.addComp("MM Vertical Bar v1", width, height, 1, duration, fps);
         comp.motionGraphicsTemplateName = "MoneyMoves Vertical Bar v1";
 
-        var background = comp.layers.addSolid([0.025, 0.028, 0.035], "Background", width, height, 1, duration);
+        var background = comp.layers.addSolid([0.043, 0.043, 0.439], "Background", width, height, 1, duration);
         background.moveToEnd();
 
         var controls = comp.layers.addNull(duration);
@@ -42,43 +52,49 @@
         }
 
         function textControl(name, value) {
-            var effect = controls.property("ADBE Effect Parade").addProperty("ADBE Text Control");
-            effect.name = name;
-            effect.property(1).setValue(value);
-            effect.property(1).addToMotionGraphicsTemplateAs(comp, name);
-            return effect;
+            // Text Control is not an addable After Effects effect. Source Text is
+            // a native Essential Graphics property, so retain the editable value
+            // in a guide layer and expose that property directly to the MOGRT.
+            var layer = comp.layers.addText(value);
+            layer.name = "EDIT TEXT — " + name;
+            layer.guideLayer = true;
+            layer.shy = true;
+            var sourceText = layer.property("ADBE Text Properties").property("ADBE Text Document");
+            sourceText.addToMotionGraphicsTemplateAs(comp, name);
+            return "thisComp.layer('" + layer.name + "').text.sourceText";
         }
 
         slider("Item Count", 5);
         slider("Animation Duration", 1.2);
         slider("Maximum Value", 100);
         slider("Decimal Places", 0);
-        textControl("Title", "MONEY MOVES");
-        textControl("Subtitle", "EDIT DATA IN PROPERTIES");
-        textControl("Prefix", "");
-        textControl("Suffix", "%");
-        color("Accent Color", [0.957, 1.0, 0.227, 1]);
-        color("Text Color", [0.957, 0.949, 0.914, 1]);
-        color("Background Color", [0.025, 0.028, 0.035, 1]);
+        var titleText = textControl("Title", "MONEY MOVES");
+        var subtitleText = textControl("Subtitle", "EDIT DATA IN PROPERTIES");
+        var prefixText = textControl("Prefix", "");
+        var suffixText = textControl("Suffix", "%");
+        color("Accent Color", [1.0, 0.141, 0.282, 1]);
+        color("Text Color", [1.0, 0.965, 0.847, 1]);
+        color("Background Color", [0.043, 0.043, 0.439, 1]);
 
         var i;
+        var labelText = [];
         for (i = 1; i <= 12; i += 1) {
             slider("Value " + i, i <= 5 ? [72, 48, 91, 64, 83][i - 1] : 50);
-            textControl("Label " + i, "ITEM " + i);
+            labelText[i] = textControl("Label " + i, "ITEM " + i);
         }
 
         background.property("ADBE Transform Group").property("ADBE Opacity").setValue(100);
         background.property("ADBE Effect Parade").addProperty("ADBE Fill").property("ADBE Fill-0002").expression =
             "thisComp.layer('EDIT — MoneyMoves Chart').effect('Background Color')('Color')";
 
-        function addTextLayer(name, sourceExpression, position, size) {
+        function addTextLayer(name, sourceExpression, position, size, font) {
             var layer = comp.layers.addText(name);
             layer.name = name;
             var textProp = layer.property("ADBE Text Properties").property("ADBE Text Document");
             var doc = textProp.value;
-            doc.font = "Arial-Black";
+            doc.font = font;
             doc.fontSize = size;
-            doc.fillColor = [0.957, 0.949, 0.914];
+            doc.fillColor = [1.0, 0.965, 0.847];
             doc.applyFill = true;
             doc.applyStroke = false;
             textProp.setValue(doc);
@@ -91,15 +107,17 @@
 
         addTextLayer(
             "Title",
-            "thisComp.layer('EDIT — MoneyMoves Chart').effect('Title')('Text')",
+            titleText,
             [120, 105],
-            64
+            64,
+            "PeaceSans"
         );
         addTextLayer(
             "Subtitle",
-            "thisComp.layer('EDIT — MoneyMoves Chart').effect('Subtitle')('Text')",
+            subtitleText,
             [122, 170],
-            24
+            24,
+            "LTSuperiorMono-Regular"
         );
 
         for (i = 1; i <= 12; i += 1) {
@@ -128,9 +146,10 @@
 
             var label = addTextLayer(
                 "Label " + i,
-                "thisComp.layer('EDIT — MoneyMoves Chart').effect('Label " + i + "')('Text')",
+                labelText[i],
                 [x - 40, 900],
-                20
+                20,
+                "LTSuperiorMono-Regular"
             );
             label.property("ADBE Transform Group").property("ADBE Opacity").expression =
                 "Math.floor(thisComp.layer('EDIT — MoneyMoves Chart').effect('Item Count')('Slider')) >= " + i + " ? 100 : 0";
@@ -138,11 +157,12 @@
             var valueLabel = addTextLayer(
                 "Value Label " + i,
                 "c=thisComp.layer('EDIT — MoneyMoves Chart');" +
-                "p=c.effect('Prefix')('Text');s=c.effect('Suffix')('Text');" +
+                "p=" + prefixText + ".toString();s=" + suffixText + ".toString();" +
                 "d=Math.floor(clamp(c.effect('Decimal Places')('Slider'),0,3));" +
                 "p+c.effect('Value " + i + "')('Slider').value.toFixed(d)+s",
                 [x - 35, 290],
-                24
+                24,
+                "LTSuperiorMono-Semibold"
             );
             valueLabel.property("ADBE Transform Group").property("ADBE Opacity").expression =
                 "Math.floor(thisComp.layer('EDIT — MoneyMoves Chart').effect('Item Count')('Slider')) >= " + i + " ? 100 : 0";
@@ -153,12 +173,11 @@
         if (!comp.exportAsMotionGraphicsTemplate(true, outputFolder.fsName)) {
             throw new Error("After Effects did not export the Motion Graphics template.");
         }
-        alert("MoneyMoves Vertical Bar created in:\n" + outputFolder.fsName);
+        report("MoneyMoves Vertical Bar created in:\n" + outputFolder.fsName);
     } catch (error) {
-        alert("MoneyMoves MOGRT build failed:\n" + error.toString());
+        report("MoneyMoves MOGRT build failed:\n" + error.toString());
         throw error;
     } finally {
         app.endUndoGroup();
     }
 }());
-
