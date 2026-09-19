@@ -117,25 +117,56 @@ export type RenderJobRequest = z.infer<typeof renderJobRequestSchema>;
 export type RenderJob = z.infer<typeof renderJobSchema>;
 export type EffectPreset = z.infer<typeof effectPresetSchema>;
 
-export const brandTokens = brandTokensSchema.parse(tokens);
+export const effectParameterTypeSchema = z.enum([
+  "number",
+  "boolean",
+  "select",
+  "color",
+  "point",
+  "bitmask",
+]);
 
-export const EFFECTS = [
-  ["Frame Gate", "com.moneymoves.frame-gate"],
-  ["RGB Shift", "com.moneymoves.rgb-shift"],
-  ["Chromatic Aberration", "com.moneymoves.chromatic-aberration"],
-  ["Halftone", "com.moneymoves.halftone"],
-  ["Dot Matrix", "com.moneymoves.dot-matrix"],
-  ["8-bit", "com.moneymoves.eight-bit"],
-  ["Dither", "com.moneymoves.dither"],
-  ["Barrel Blur", "com.moneymoves.barrel-blur"],
-  ["Bloom", "com.moneymoves.bloom"],
-  ["Progressive Blur", "com.moneymoves.progressive-blur"],
-  ["CRT", "com.moneymoves.crt"],
-  ["ASCII", "com.moneymoves.ascii"],
-  ["LinoCut", "com.moneymoves.linocut"],
-  ["Voxel", "com.moneymoves.voxel"],
-  ["Blob Tracking", "com.moneymoves.blob-tracking"],
-] as const;
+export const effectParameterOptionSchema = z.object({
+  id: z.string().regex(/^[a-z0-9-]+$/),
+  label: z.string().min(1).max(64),
+  value: z.union([z.number(), z.string(), z.boolean()]),
+});
+
+export const effectParameterDefinitionSchema = z.object({
+  key: z.string().regex(/^[a-z][a-zA-Z0-9]*$/),
+  label: z.string().min(1).max(80),
+  index: z.number().int().positive(),
+  type: effectParameterTypeSchema,
+  defaultValue: z.union([z.number(), z.string(), z.boolean()]),
+  min: z.number().optional(),
+  max: z.number().optional(),
+  step: z.number().positive().optional(),
+  unit: z.enum(["pixels", "degrees", "percent", "frames"]).optional(),
+  options: z.array(effectParameterOptionSchema).optional(),
+  keyframeable: z.boolean().default(true),
+  bitCountParameter: z.string().optional(),
+});
+
+export const effectDefinitionSchema = z.object({
+  id: z.string().regex(/^[a-z0-9-]+$/),
+  name: z.string().min(1).max(80),
+  matchName: z.string().startsWith("com.moneymoves."),
+  category: z.enum(["transition", "palette", "stylize", "advanced"]),
+  status: z.enum(["available", "planned"]),
+  description: z.string().min(1).max(180),
+  parameters: z.array(effectParameterDefinitionSchema),
+  presets: z.array(effectPresetSchema).default([]),
+  schemaVersion: z.literal(SCHEMA_VERSION),
+});
+
+export const effectRegistrySchema = z.array(effectDefinitionSchema);
+
+export type EffectParameterDefinition = z.infer<
+  typeof effectParameterDefinitionSchema
+>;
+export type EffectDefinition = z.infer<typeof effectDefinitionSchema>;
+
+export const brandTokens = brandTokensSchema.parse(tokens);
 
 export const FRAME_GATE_PRESETS: readonly EffectPreset[] = [
   {
@@ -187,3 +218,192 @@ export const FRAME_GATE_PRESETS: readonly EffectPreset[] = [
     },
   },
 ];
+
+export const EFFECT_REGISTRY: readonly EffectDefinition[] = effectRegistrySchema.parse([
+  {
+    id: "frame-gate",
+    name: "Frame Gate",
+    matchName: "com.moneymoves.frame-gate",
+    category: "transition",
+    status: "planned",
+    description: "Transparent throttle and stutter frames without touching audio.",
+    parameters: [
+      {
+        key: "mode",
+        label: "Region",
+        index: 1,
+        type: "select",
+        defaultValue: 3,
+        options: [
+          { id: "head", label: "Start", value: 1 },
+          { id: "tail", label: "End", value: 2 },
+          { id: "both", label: "Start + End", value: 3 },
+        ],
+        keyframeable: false,
+      },
+      {
+        key: "headLength",
+        label: "Start frames",
+        index: 2,
+        type: "number",
+        defaultValue: 5,
+        min: 1,
+        max: 12,
+        step: 1,
+        unit: "frames",
+        keyframeable: false,
+      },
+      {
+        key: "headMask",
+        label: "Start pattern",
+        index: 3,
+        type: "bitmask",
+        defaultValue: 21,
+        min: 0,
+        max: 4095,
+        bitCountParameter: "headLength",
+        keyframeable: false,
+      },
+      {
+        key: "tailLength",
+        label: "End frames",
+        index: 4,
+        type: "number",
+        defaultValue: 5,
+        min: 1,
+        max: 12,
+        step: 1,
+        unit: "frames",
+        keyframeable: false,
+      },
+      {
+        key: "tailMask",
+        label: "End pattern",
+        index: 5,
+        type: "bitmask",
+        defaultValue: 21,
+        min: 0,
+        max: 4095,
+        bitCountParameter: "tailLength",
+        keyframeable: false,
+      },
+    ],
+    presets: [...FRAME_GATE_PRESETS],
+    schemaVersion: SCHEMA_VERSION,
+  },
+  {
+    id: "rgb-shift",
+    name: "RGB Shift",
+    matchName: "com.moneymoves.rgb-shift",
+    category: "palette",
+    status: "available",
+    description: "Deterministic per-channel displacement with preserved alpha.",
+    parameters: [
+      {
+        key: "amount",
+        label: "Amount",
+        index: 1,
+        type: "number",
+        defaultValue: 12,
+        min: 0,
+        max: 200,
+        step: 1,
+        unit: "pixels",
+        keyframeable: true,
+      },
+      {
+        key: "direction",
+        label: "Direction",
+        index: 2,
+        type: "number",
+        defaultValue: 0,
+        min: 0,
+        max: 360,
+        step: 1,
+        unit: "degrees",
+        keyframeable: true,
+      },
+      {
+        key: "redOffset",
+        label: "Red offset",
+        index: 3,
+        type: "number",
+        defaultValue: 1,
+        min: -2,
+        max: 2,
+        step: 0.01,
+        keyframeable: true,
+      },
+      {
+        key: "greenOffset",
+        label: "Green offset",
+        index: 4,
+        type: "number",
+        defaultValue: 0,
+        min: -2,
+        max: 2,
+        step: 0.01,
+        keyframeable: true,
+      },
+      {
+        key: "blueOffset",
+        label: "Blue offset",
+        index: 5,
+        type: "number",
+        defaultValue: -1,
+        min: -2,
+        max: 2,
+        step: 0.01,
+        keyframeable: true,
+      },
+      {
+        key: "mix",
+        label: "Mix",
+        index: 6,
+        type: "number",
+        defaultValue: 1,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        unit: "percent",
+        keyframeable: true,
+      },
+    ],
+    presets: [],
+    schemaVersion: SCHEMA_VERSION,
+  },
+  ...[
+    ["chromatic-aberration", "Chromatic Aberration", "stylize"],
+    ["halftone", "Halftone", "palette"],
+    ["dot-matrix", "Dot Matrix", "palette"],
+    ["eight-bit", "8-bit", "palette"],
+    ["dither", "Dither", "palette"],
+    ["barrel-blur", "Barrel Blur", "stylize"],
+    ["bloom", "Bloom", "stylize"],
+    ["progressive-blur", "Progressive Blur", "stylize"],
+    ["crt", "CRT", "stylize"],
+    ["ascii", "ASCII", "palette"],
+    ["linocut", "LinoCut", "advanced"],
+    ["voxel", "Voxel", "advanced"],
+    ["blob-tracking", "Blob Tracking", "advanced"],
+  ].map(([id, name, category]) => ({
+    id,
+    name,
+    matchName: `com.moneymoves.${id}`,
+    category,
+    status: "planned",
+    description: "Scheduled for a later MoneyMoves production phase.",
+    parameters: [],
+    presets: [],
+    schemaVersion: SCHEMA_VERSION,
+  })),
+]);
+
+export const EFFECTS = EFFECT_REGISTRY.map(({ name, matchName }) => [
+  name,
+  matchName,
+] as const);
+
+export function getEffectDefinition(matchName: string): EffectDefinition | undefined {
+  return EFFECT_REGISTRY.find((effect) => effect.matchName === matchName);
+}

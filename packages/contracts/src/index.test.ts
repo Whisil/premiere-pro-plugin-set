@@ -2,8 +2,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   FRAME_GATE_PRESETS,
+  EFFECT_REGISTRY,
   asciiTitleJobRequestSchema,
   brandTokens,
+  getEffectDefinition,
   mapJobRequestSchema,
 } from "./index.js";
 
@@ -50,5 +52,20 @@ describe("shared contracts", () => {
       FRAME_GATE_PRESETS.find((preset) => preset.id === "throttle-both")
         ?.parameters.headMask,
     ).toBe(21);
+  });
+
+  it("keeps panel metadata aligned with the first native effect", () => {
+    const rgbShift = getEffectDefinition("com.moneymoves.rgb-shift");
+    expect(rgbShift?.status).toBe("available");
+    expect(rgbShift?.parameters.map((parameter) => parameter.index)).toEqual([
+      1, 2, 3, 4, 5, 6,
+    ]);
+    expect(EFFECT_REGISTRY).toHaveLength(15);
+  });
+
+  it("keeps Frame Gate unavailable until its native bundle exists", () => {
+    const frameGate = getEffectDefinition("com.moneymoves.frame-gate");
+    expect(frameGate?.status).toBe("planned");
+    expect(frameGate?.presets).toEqual(FRAME_GATE_PRESETS);
   });
 });
