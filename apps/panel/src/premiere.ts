@@ -10,6 +10,7 @@ const FRAME_GATE_PARAM_INDEX: Record<string, number> = {
 
 const MODE_VALUE: Record<string, number> = { head: 1, tail: 2, both: 3 };
 const PREMIERE_TICKS_PER_SECOND = 254_016_000_000;
+let premiereProvider: (() => any) | undefined;
 
 export interface SequenceFormat {
   name: string;
@@ -30,12 +31,19 @@ export function fpsFromTimebase(timebase: string): number {
 }
 
 function getPremiere(): any {
+  if (premiereProvider) return premiereProvider();
   if (typeof require !== "function") {
     throw new Error(
       "Premiere APIs are only available when the panel is loaded in UXP.",
     );
   }
   return require("premierepro");
+}
+
+export function setPremiereProviderForTesting(
+  provider: (() => any) | undefined,
+): void {
+  premiereProvider = provider;
 }
 
 async function getContext(): Promise<{
