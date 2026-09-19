@@ -1,4 +1,7 @@
+pub mod dither;
+pub mod dot_matrix;
 pub mod frame_gate;
+pub mod halftone;
 pub mod palette;
 pub mod rgb_shift;
 

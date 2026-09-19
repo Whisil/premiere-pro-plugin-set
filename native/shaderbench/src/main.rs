@@ -3,7 +3,10 @@ use clap::{Parser, ValueEnum};
 use image::{DynamicImage, RgbaImage};
 use moneymoves_core::{
     RgbaImageF32,
+    dither::{DitherParams, apply as apply_dither},
+    dot_matrix::{DotMatrixParams, apply as apply_dot_matrix},
     frame_gate::FrameGateParams,
+    halftone::{HalftoneParams, apply as apply_halftone},
     rgb_shift::{RgbShiftParams, apply as apply_rgb_shift},
 };
 use serde::de::DeserializeOwned;
@@ -13,6 +16,9 @@ use std::{fs, path::PathBuf};
 enum Effect {
     RgbShift,
     FrameGate,
+    Halftone,
+    Dither,
+    DotMatrix,
 }
 
 #[derive(Debug, Parser)]
@@ -68,6 +74,11 @@ fn main() -> Result<()> {
     );
     let output = match args.effect {
         Effect::RgbShift => apply_rgb_shift(&input, load_params::<RgbShiftParams>(&args.params)?),
+        Effect::Halftone => apply_halftone(&input, load_params::<HalftoneParams>(&args.params)?),
+        Effect::Dither => apply_dither(&input, &load_params::<DitherParams>(&args.params)?),
+        Effect::DotMatrix => {
+            apply_dot_matrix(&input, load_params::<DotMatrixParams>(&args.params)?)
+        }
         Effect::FrameGate => {
             let params = load_params::<FrameGateParams>(&args.params)?;
             let mut output = input;
