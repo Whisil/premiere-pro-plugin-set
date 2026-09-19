@@ -41,10 +41,18 @@ pub struct MoneyMovesRgbShift;
 impl Effect for MoneyMovesRgbShift {
     type Params = Params;
 
-    fn descriptor(descriptor: EffectDescriptor) -> EffectDescriptor {
+    fn descriptor(mut descriptor: EffectDescriptor) -> EffectDescriptor {
+        // prgpu 0.2.0 intentionally leaves the runtime descriptor name blank;
+        // the PiPL name does not populate the AEGP registration call.
+        descriptor.display_name = "MoneyMoves RGB Shift";
         descriptor
             .about("MoneyMoves RGB Shift — deterministic per-channel displacement")
             .version(env!("CARGO_PKG_VERSION"))
+            .premiere_pixel_formats([
+                ae::pr::PixelFormat::Bgra4444_8u,
+                ae::pr::PixelFormat::Bgra4444_16u,
+                ae::pr::PixelFormat::Bgra4444_32f,
+            ])
     }
 
     fn pipeline(graph: &mut Graph<Self::Params>) {
