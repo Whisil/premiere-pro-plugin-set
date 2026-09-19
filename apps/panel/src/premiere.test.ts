@@ -84,7 +84,10 @@ function createPremiereMock(clipCount: number, withAppliedEffect = false) {
     getComponentChain = vi.fn(async () => this.chain);
   }
 
-  const clips = Array.from({ length: clipCount }, () => new VideoClipTrackItem());
+  const clips = Array.from(
+    { length: clipCount },
+    () => new VideoClipTrackItem(),
+  );
   const executeTransaction = vi.fn(
     (callback: (compoundAction: { addAction: typeof addAction }) => void) => {
       callback({ addAction });
