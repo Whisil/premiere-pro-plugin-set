@@ -1,0 +1,45 @@
+# Production roadmap
+
+Status values are `done`, `in progress`, `blocked`, and `queued`. A phase is complete only when its exit gate is recorded with evidence.
+
+| Phase                       | Status      | Exit gate                                                     |
+| --------------------------- | ----------- | ------------------------------------------------------------- |
+| 0. Research and feasibility | in progress | Four Adobe-host spikes pass and ADRs contain evidence         |
+| 1. Repository foundation    | in progress | CI is green; local setup is reproducible                      |
+| 2. Frame Gate               | blocked     | Signed bundle loads; exact-frame and one-undo tests pass      |
+| 3. Palette effects          | queued      | Six effects pass golden and Premiere lifecycle tests          |
+| 4. Multi-pass effects       | queued      | Four effects meet preview/export budgets                      |
+| 5. ASCII workflows          | in progress | Real-time effect and generated title workflows pass           |
+| 6. Maps                     | in progress | Deterministic 4K alpha clip renders/imports under 90 s        |
+| 7. Charts                   | in progress | Vertical bar approved in a real edit, then six families ship  |
+| 8. Advanced effects         | queued      | LinoCut, Voxel, and Blob Tracking approved independently      |
+| 9. Release hardening        | queued      | Soak edit passes; signed local release and recovery docs ship |
+
+## Current implementation
+
+- Shared schemas, tokens, effect IDs, and Frame Gate presets.
+- Manifest v5 React panel with batch effect transactions, renderer jobs, import, palettes, diagnostics, and MOGRT insertion adapter.
+- Authenticated map/ASCII renderer with cancellation and transparent ProRes output.
+- Deterministic Frame Gate and RGB Shift CPU references, OKLab utilities, Slang kernel sources, and shaderbench.
+- After Effects vertical-bar authoring script and local renderer lifecycle assets.
+
+## Phase 0 gates
+
+Do not call a gate complete from a unit test alone. Record Premiere version, SDK version, renderer, source project, output artifact, timing, and pass/fail in `docs/validation/phase-0-results.md`.
+
+1. Load the panel through UXP Developer Tool 2.2+ and prove apply/remove across 20 selected clips is one undo step.
+2. Build, ad-hoc sign, and load RGB Shift through both the Premiere GPU entry point and CPU fallback.
+3. Render ten alpha frames to ProRes 4444, import, composite, export through AME, and compare alpha.
+4. Generate the vertical-bar MOGRT, insert it, enumerate exposed properties, and set every stable property available in 25.6.4.
+
+## Definition of done for an effect
+
+- Parameter contract, bounds, defaults, labels, keyframing, and migration behavior are documented.
+- CPU and GPU implementations pass defaults/extremes, alpha, gradient, skin, noise, and palette goldens.
+- Save/reopen, copy/paste, nest, trim, speed-change, disable/remove, preview resolution, and AME export pass.
+- Performance is recorded on the target M3 Pro; failures are visible in panel diagnostics.
+- A visual acceptance frame is approved before merging.
+
+## Release sequence
+
+Work vertically. Frame Gate is the first releasable tool. RGB Shift establishes the effect architecture. One map preset, one ASCII title, and one vertical-bar MOGRT establish each other subsystem before breadth is added. Advanced effects remain separate milestones because their tracking/geometry work has distinct failure modes.
