@@ -1,0 +1,31 @@
+{
+  "name": "@moneymoves/render-service",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "MONEYMOVES_RENDER_TOKEN=development-token tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@moneymoves/contracts": "workspace:*",
+    "@resvg/resvg-js": "2.6.2",
+    "d3-geo": "3.1.1",
+    "figlet": "1.9.1",
+    "topojson-client": "3.1.0",
+    "world-atlas": "2.0.2",
+    "world-countries": "5.1.0"
+  },
+  "devDependencies": {
+    "@types/d3-geo": "3.1.0",
+    "@types/figlet": "1.7.0",
+    "@types/node": "24.5.2",
+    "@types/topojson-client": "3.1.5",
+    "tsx": "4.20.5",
+    "typescript": "5.9.2",
+    "vitest": "3.2.4"
+  }
+}
