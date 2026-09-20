@@ -227,3 +227,30 @@ native-barrel-blur-bundle profile:
 
 native-barrel-blur-install: native-barrel-blur-build
     ./scripts/install-native-dev.sh "{{target_dir}}/debug/MoneyMoves Barrel Blur.plugin"
+
+native-bloom-build: native-validate
+    cargo build -p moneymoves-bloom --target aarch64-apple-darwin
+    just native-bloom-bundle debug
+
+native-bloom-release: native-validate
+    cargo build -p moneymoves-bloom --release --target aarch64-apple-darwin
+    just native-bloom-bundle release
+
+native-bloom-bundle profile:
+    #!/bin/zsh
+    set -euo pipefail
+    bundle="{{target_dir}}/{{profile}}/MoneyMoves Bloom.plugin"
+    artifact_dir="{{target_dir}}/aarch64-apple-darwin/{{profile}}"
+    rm -rf "$bundle"
+    mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources"
+    cp "$artifact_dir/libmoneymoves_bloom.dylib" "$bundle/Contents/MacOS/MoneyMoves Bloom"
+    cp "$artifact_dir/moneymoves-bloom.rsrc" "$bundle/Contents/Resources/MoneyMoves Bloom.rsrc"
+    cp "$artifact_dir/moneymoves-bloom_PkgInfo" "$bundle/Contents/PkgInfo"
+    cp "$artifact_dir/moneymoves-bloom_Info.plist" "$bundle/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c 'Set :CFBundleIdentifier com.moneymoves.bloom' "$bundle/Contents/Info.plist"
+    codesign --force --deep --sign - "$bundle"
+    codesign --verify --deep --strict "$bundle"
+    print "Created $bundle"
+
+native-bloom-install: native-bloom-build
+    ./scripts/install-native-dev.sh "{{target_dir}}/debug/MoneyMoves Bloom.plugin"

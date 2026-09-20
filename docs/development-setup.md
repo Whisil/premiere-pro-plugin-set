@@ -83,6 +83,7 @@ just native-eight-bit-install
 just native-dither-install
 just native-chromatic-install
 just native-barrel-blur-install
+just native-bloom-install
 ```
 
 `prgpu-build` 0.2.0 has a crates.io include-path defect for its bundled `vekl` shaders. The RGB Shift build script resolves the `vekl` copy belonging to the exact pinned `prgpu` crate. Set `PRGPU_VEKL_ROOT` only when using a vendored Cargo registry.

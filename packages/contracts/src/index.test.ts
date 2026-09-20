@@ -125,4 +125,13 @@ describe("shared contracts", () => {
     ]);
     expect(barrelBlur?.presets).toHaveLength(3);
   });
+
+  it("defines the tinted and keyframable Bloom contract", () => {
+    const bloom = getEffectDefinition("com.moneymoves.bloom");
+    expect(bloom?.status).toBe("available");
+    expect(bloom?.parameters.map((parameter) => parameter.index)).toEqual([
+      1, 2, 3, 4, 5, 6, 7,
+    ]);
+    expect(bloom?.presets).toHaveLength(3);
+  });
 });

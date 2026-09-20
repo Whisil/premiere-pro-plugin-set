@@ -46,6 +46,7 @@ tooling outside Premiere.
 - Panel-driven Dither CPU/Metal bundle with Bayer and deterministic blue-noise modes plus 2–8 colors.
 - Panel-driven Chromatic Aberration CPU/Metal bundle with radial separation, optical-center controls, and edge modes.
 - Panel-driven Barrel Blur CPU/Metal bundle with barrel/pincushion distortion and 4/8/16-sample quality modes.
+- Panel-driven Bloom CPU/Metal bundle with tinted threshold glow and 4/8/16-sample quality modes.
 - Standalone CCX release packaging for normal installation without UXP Developer Tool.
 - Reproducible ten-frame ProRes 4444 alpha feasibility artifact.
 

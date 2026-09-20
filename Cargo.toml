@@ -3,6 +3,7 @@ resolver = "2"
 members = [
   "native/core",
   "native/plugins/barrel-blur",
+  "native/plugins/bloom",
   "native/plugins/chromatic-aberration",
   "native/plugins/dot-matrix",
   "native/plugins/dither",
@@ -14,7 +15,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.8.0"
+version = "0.9.0"
 edition = "2024"
 license = "MIT"
 authors = ["MoneyMoves"]

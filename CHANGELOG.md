@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.8.0 - Unreleased
+## 0.9.0 - Unreleased
+
+- Add the panel-driven Bloom CPU/Metal effect with threshold, soft knee,
+  quality-controlled glow radius, intensity, tint, and keyframable mix.
+
+## 0.8.0 - 2026-09-20
 
 - Add the panel-driven Barrel Blur CPU/Metal effect with barrel/pincushion
   distortion, radial edge blur, optical-center controls, and quality modes.
