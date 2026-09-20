@@ -1,3 +1,4 @@
+pub mod ascii;
 pub mod barrel_blur;
 pub mod bloom;
 pub mod chromatic_aberration;

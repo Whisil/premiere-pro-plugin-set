@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.12.0 - Unreleased
+
+- Add a real-time panel-driven ASCII video effect with Standard, Block, Dot,
+  Binary, Shade, and Braille families; source/mono/palette color modes; custom
+  colors; CPU fallback; and Metal rendering.
+- Restore the panel Generate workspace for static or animated FIGlet ASCII
+  titles, shared palettes, active-sequence output matching, render progress,
+  cancellation, and automatic Premiere import.
+- Add Money Terminal, Source Glyphs, and Binary Signal presets plus
+  shaderbench and signed Apple-Silicon bundle/install support.
+
 ## 0.11.0 - Unreleased
 
 - Add panel-driven CRT with curvature, scanlines, phosphor triads, RGB

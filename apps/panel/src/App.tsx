@@ -1,14 +1,20 @@
 import {
   EFFECT_REGISTRY,
+  SCHEMA_VERSION,
+  brandTokens,
+  type AsciiTitleJobRequest,
   type EffectDefinition,
   type EffectParameterDefinition,
+  type RenderJob,
 } from "@moneymoves/contracts";
 import { useEffect, useMemo, useState } from "react";
 import {
   applyEffect,
   applyEffectPreset,
+  getActiveSequenceFormat,
   getInstalledMoneyMovesEffects,
   getSelectionSummary,
+  importGeneratedFile,
   inspectEffectSelection,
   removeEffect,
   setEffectParameter,
@@ -17,10 +23,29 @@ import {
   type EffectSelectionState,
   type SelectionSummary,
 } from "./premiere.js";
+import {
+  cancelRenderJob,
+  getRendererToken,
+  rendererHealth,
+  setRendererToken,
+  submitRenderJob,
+  waitForRenderJob,
+} from "./renderer.js";
 
 type Notice = { tone: "info" | "success" | "error"; message: string };
+type PanelView = "effects" | "generate";
 
 const PANEL_EFFECT_KEY = "moneymoves.panel.effect";
+const PANEL_VIEW_KEY = "moneymoves.panel.view";
+const PANEL_PALETTE_KEY = "moneymoves.panel.palette";
+
+function storedValue(key: string, fallback: string): string {
+  try {
+    return localStorage.getItem(key) ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 function storedEffectMatchName(): string {
   try {
@@ -225,6 +250,25 @@ export function App() {
     message: "",
   });
   const [busy, setBusy] = useState(false);
+  const [view, setView] = useState<PanelView>(
+    () => storedValue(PANEL_VIEW_KEY, "effects") as PanelView,
+  );
+  const [rendererOnline, setRendererOnline] = useState(false);
+  const [jobs, setJobs] = useState<RenderJob[]>([]);
+  const [asciiText, setAsciiText] = useState("MONEY MOVES");
+  const [asciiFont, setAsciiFont] =
+    useState<AsciiTitleJobRequest["font"]>("Standard");
+  const [asciiAnimation, setAsciiAnimation] =
+    useState<AsciiTitleJobRequest["animation"]>("reveal");
+  const [paletteId, setPaletteId] = useState(() =>
+    storedValue(PANEL_PALETTE_KEY, "moneymoves-core"),
+  );
+  const [width, setWidth] = useState(3840);
+  const [height, setHeight] = useState(2160);
+  const [fps, setFps] = useState(30);
+  const [durationSeconds, setDurationSeconds] = useState(3);
+  const [sequenceName, setSequenceName] = useState("Manual output");
+  const [token, setToken] = useState(getRendererToken);
   const [selectedMatchName, setSelectedMatchName] = useState(
     storedEffectMatchName,
   );
@@ -256,6 +300,34 @@ export function App() {
   useEffect(() => {
     if (selectedEffect) persistEffectMatchName(selectedEffect.matchName);
   }, [selectedEffect]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(PANEL_VIEW_KEY, view);
+      localStorage.setItem(PANEL_PALETTE_KEY, paletteId);
+    } catch {
+      // Persistence is optional in restricted previews.
+    }
+  }, [view, paletteId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void rendererHealth().then((online) => {
+      if (!cancelled) setRendererOnline(online);
+    });
+    void getActiveSequenceFormat()
+      .then((format) => {
+        if (cancelled) return;
+        setWidth(format.width);
+        setHeight(format.height);
+        setFps(format.fps);
+        setSequenceName(format.name);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -394,126 +466,401 @@ export function App() {
     });
   }
 
+  async function syncOutputToSequence(): Promise<void> {
+    const format = await getActiveSequenceFormat();
+    setWidth(format.width);
+    setHeight(format.height);
+    setFps(format.fps);
+    setSequenceName(format.name);
+    setNotice({
+      tone: "success",
+      message: `Output matched ${format.name}: ${format.width}×${format.height} at ${format.fps} fps.`,
+    });
+  }
+
+  async function renderAsciiTitle(): Promise<void> {
+    const created = await submitRenderJob({
+      schemaVersion: SCHEMA_VERSION,
+      kind: "ascii-title",
+      text: asciiText.trim(),
+      font: asciiFont,
+      animation: asciiAnimation,
+      paletteId,
+      width,
+      height,
+      fps,
+      durationSeconds,
+      outputName:
+        asciiAnimation === "static"
+          ? "moneymoves-ascii.png"
+          : "moneymoves-ascii.mov",
+    });
+    setJobs((current) => [created, ...current]);
+    const completed = await waitForRenderJob(created, (updated) => {
+      setJobs((current) => [
+        updated,
+        ...current.filter((job) => job.id !== updated.id),
+      ]);
+    });
+    if (!completed.outputPath) {
+      throw new Error("ASCII renderer completed without an output file.");
+    }
+    await importGeneratedFile(completed.outputPath);
+    setNotice({
+      tone: "success",
+      message: `ASCII title imported: ${completed.outputPath}`,
+    });
+  }
+
   return (
     <main className="app-shell">
       <header className="masthead">
         <div>
           <p className="eyebrow">MONEYMOVES</p>
-          <h1>Effects</h1>
+          <h1>{view === "effects" ? "Effects" : "Generate"}</h1>
         </div>
-        <p className="selection-state">{selectionCopy(selection)}</p>
+        <p className="selection-state">
+          {view === "effects"
+            ? selectionCopy(selection)
+            : rendererOnline
+              ? "Renderer online"
+              : "Renderer offline"}
+        </p>
       </header>
+
+      <nav className="workspace-nav" aria-label="MoneyMoves workspace">
+        <button
+          className={view === "effects" ? "active" : "quiet"}
+          onClick={() => setView("effects")}
+          type="button"
+        >
+          Effects
+        </button>
+        <button
+          className={view === "generate" ? "active" : "quiet"}
+          onClick={() => setView("generate")}
+          type="button"
+        >
+          Generate
+        </button>
+      </nav>
 
       {notice.message ? (
         <p className={`notice ${notice.tone}`}>{notice.message}</p>
       ) : null}
 
-      {installedEffects.length === 0 ? (
-        <p className="empty-state">
-          No MoneyMoves effects are listed yet. Open a Premiere project, then
-          try Apply on a selected clip.
-        </p>
-      ) : (
-        <div className="effect-list">
-          {installedEffects.map((effect) => {
-            const state = effectStates[effect.matchName];
-            const isSelected = effect.matchName === selectedEffect?.matchName;
-            const isOn = state?.state === "all" || state?.state === "some";
-            return (
-              <article
-                className={isSelected ? "effect-card selected" : "effect-card"}
-                key={effect.matchName}
-              >
-                <div className="effect-row">
-                  <button
-                    className="effect-name"
-                    disabled={busy}
-                    onClick={() => chooseEffect(effect)}
-                    type="button"
+      {view === "effects" ? (
+        <>
+          {installedEffects.length === 0 ? (
+            <p className="empty-state">
+              No MoneyMoves effects are listed yet. Open a Premiere project,
+              then try Apply on a selected clip.
+            </p>
+          ) : (
+            <div className="effect-list">
+              {installedEffects.map((effect) => {
+                const state = effectStates[effect.matchName];
+                const isSelected =
+                  effect.matchName === selectedEffect?.matchName;
+                const isOn = state?.state === "all" || state?.state === "some";
+                return (
+                  <article
+                    className={
+                      isSelected ? "effect-card selected" : "effect-card"
+                    }
+                    key={effect.matchName}
                   >
-                    <span>{effect.name}</span>
-                    <span className={isOn ? "status on" : "status off"}>
-                      {appliedCopy(state)}
-                    </span>
-                  </button>
-                  {isOn ? (
-                    <button
-                      className="quiet"
-                      disabled={busy}
-                      onClick={() => removeSelected(effect)}
-                      type="button"
-                    >
-                      Remove
-                    </button>
-                  ) : null}
-                  {state?.state === "some" || !isOn ? (
-                    <button
-                      disabled={busy || !selection?.videoClips}
-                      onClick={() => applyNamed(effect)}
-                      type="button"
-                    >
-                      Apply
-                    </button>
-                  ) : null}
-                </div>
+                    <div className="effect-row">
+                      <button
+                        className="effect-name"
+                        disabled={busy}
+                        onClick={() => chooseEffect(effect)}
+                        type="button"
+                      >
+                        <span>{effect.name}</span>
+                        <span className={isOn ? "status on" : "status off"}>
+                          {appliedCopy(state)}
+                        </span>
+                      </button>
+                      {isOn ? (
+                        <button
+                          className="quiet"
+                          disabled={busy}
+                          onClick={() => removeSelected(effect)}
+                          type="button"
+                        >
+                          Remove
+                        </button>
+                      ) : null}
+                      {state?.state === "some" || !isOn ? (
+                        <button
+                          disabled={busy || !selection?.videoClips}
+                          onClick={() => applyNamed(effect)}
+                          type="button"
+                        >
+                          Apply
+                        </button>
+                      ) : null}
+                    </div>
 
-                {isSelected && isOn && effect.parameters.length > 0 ? (
-                  <div className="effect-editor">
-                    {effect.presets.length > 0 ? (
-                      <div className="preset-row">
-                        {effect.presets.map((preset) => (
-                          <button
-                            className="quiet"
+                    {isSelected && isOn && effect.parameters.length > 0 ? (
+                      <div className="effect-editor">
+                        {effect.presets.length > 0 ? (
+                          <div className="preset-row">
+                            {effect.presets.map((preset) => (
+                              <button
+                                className="quiet"
+                                disabled={busy}
+                                key={preset.id}
+                                onClick={() =>
+                                  void run(async () => {
+                                    await applyEffectPreset(preset);
+                                    await refreshStates();
+                                    setNotice({
+                                      tone: "success",
+                                      message: `${preset.name} applied.`,
+                                    });
+                                  })
+                                }
+                                type="button"
+                              >
+                                {preset.name}
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
+                        {effect.parameters.map((parameter) => (
+                          <EffectParameterControl
+                            definition={effect}
                             disabled={busy}
-                            key={preset.id}
-                            onClick={() =>
+                            effectState={state}
+                            key={parameter.key}
+                            parameter={parameter}
+                            onSetValue={(nextParameter, value) =>
                               void run(async () => {
-                                await applyEffectPreset(preset);
+                                await setEffectParameter(
+                                  effect,
+                                  nextParameter,
+                                  value,
+                                );
                                 await refreshStates();
-                                setNotice({
-                                  tone: "success",
-                                  message: `${preset.name} applied.`,
-                                });
+                                setNotice({ tone: "info", message: "" });
                               })
                             }
-                            type="button"
-                          >
-                            {preset.name}
-                          </button>
+                          />
                         ))}
                       </div>
                     ) : null}
-                    {effect.parameters.map((parameter) => (
-                      <EffectParameterControl
-                        definition={effect}
-                        disabled={busy}
-                        effectState={state}
-                        key={parameter.key}
-                        parameter={parameter}
-                        onSetValue={(nextParameter, value) =>
-                          void run(async () => {
-                            await setEffectParameter(
-                              effect,
-                              nextParameter,
-                              value,
-                            );
-                            await refreshStates();
-                            setNotice({ tone: "info", message: "" });
-                          })
-                        }
-                      />
-                    ))}
-                  </div>
-                ) : null}
-              </article>
-            );
-          })}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+
+          {selectedEffect && !selectedIsOn && selection?.videoClips ? (
+            <p className="hint">
+              Click an effect to put it on the selected clips.
+            </p>
+          ) : null}
+        </>
+      ) : (
+        <div className="generate-workspace">
+          <section className="generator-card">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">ASCII TITLE</p>
+                <h2>Text to transparent media</h2>
+              </div>
+              <span className={rendererOnline ? "status on" : "status off"}>
+                {rendererOnline ? "Online" : "Offline"}
+              </span>
+            </div>
+
+            <label className="field">
+              <span>Text</span>
+              <textarea
+                maxLength={160}
+                value={asciiText}
+                onChange={(event) => setAsciiText(event.target.value)}
+              />
+            </label>
+
+            <div className="field-grid">
+              <label className="field">
+                <span>FIGlet style</span>
+                <select
+                  value={asciiFont}
+                  onChange={(event) =>
+                    setAsciiFont(
+                      event.target.value as AsciiTitleJobRequest["font"],
+                    )
+                  }
+                >
+                  {(
+                    ["Standard", "Slant", "Big", "Small", "Block"] as const
+                  ).map((font) => (
+                    <option key={font} value={font}>
+                      {font}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                <span>Animation</span>
+                <select
+                  value={asciiAnimation}
+                  onChange={(event) =>
+                    setAsciiAnimation(
+                      event.target.value as AsciiTitleJobRequest["animation"],
+                    )
+                  }
+                >
+                  {(["static", "reveal", "flicker", "scramble"] as const).map(
+                    (animation) => (
+                      <option key={animation} value={animation}>
+                        {animation}
+                      </option>
+                    ),
+                  )}
+                </select>
+              </label>
+            </div>
+
+            <label className="field">
+              <span>Palette</span>
+              <select
+                value={paletteId}
+                onChange={(event) => setPaletteId(event.target.value)}
+              >
+                {brandTokens.palettes.map((palette) => (
+                  <option key={palette.id} value={palette.id}>
+                    {palette.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="swatches">
+              {brandTokens.palettes
+                .find((palette) => palette.id === paletteId)
+                ?.colors.map((color) => (
+                  <span key={color} style={{ backgroundColor: color }} />
+                ))}
+            </div>
+
+            <div className="field-grid output-grid">
+              <label className="field">
+                <span>Width</span>
+                <input
+                  max={7680}
+                  min={320}
+                  type="number"
+                  value={width}
+                  onChange={(event) => setWidth(Number(event.target.value))}
+                />
+              </label>
+              <label className="field">
+                <span>Height</span>
+                <input
+                  max={4320}
+                  min={180}
+                  type="number"
+                  value={height}
+                  onChange={(event) => setHeight(Number(event.target.value))}
+                />
+              </label>
+              <label className="field">
+                <span>FPS</span>
+                <input
+                  max={120}
+                  min={1}
+                  step={0.001}
+                  type="number"
+                  value={fps}
+                  onChange={(event) => setFps(Number(event.target.value))}
+                />
+              </label>
+              <label className="field">
+                <span>Seconds</span>
+                <input
+                  max={60}
+                  min={0.1}
+                  step={0.1}
+                  type="number"
+                  value={durationSeconds}
+                  onChange={(event) =>
+                    setDurationSeconds(Number(event.target.value))
+                  }
+                />
+              </label>
+            </div>
+
+            <div className="generator-actions">
+              <button
+                className="quiet"
+                disabled={busy}
+                onClick={() => void run(syncOutputToSequence)}
+                type="button"
+              >
+                Match active sequence
+              </button>
+              <span className="hint">{sequenceName}</span>
+              <button
+                disabled={
+                  busy || !rendererOnline || asciiText.trim().length === 0
+                }
+                onClick={() => void run(renderAsciiTitle)}
+                type="button"
+              >
+                Render &amp; Import
+              </button>
+            </div>
+          </section>
+
+          <section className="generator-card">
+            <p className="eyebrow">RENDERER CONNECTION</p>
+            <label className="field">
+              <span>Local renderer token</span>
+              <input
+                type="password"
+                value={token}
+                onChange={(event) => setToken(event.target.value)}
+              />
+            </label>
+            <button
+              className="quiet"
+              onClick={() => {
+                setRendererToken(token);
+                void rendererHealth().then(setRendererOnline);
+              }}
+              type="button"
+            >
+              Save &amp; reconnect
+            </button>
+          </section>
+
+          {jobs.length > 0 ? (
+            <section className="generator-card">
+              <p className="eyebrow">RENDER QUEUE</p>
+              {jobs.map((job) => (
+                <div className="job" key={job.id}>
+                  <span>{job.kind}</span>
+                  <span>{job.state}</span>
+                  <span>{Math.round(job.progress * 100)}%</span>
+                  {job.state === "queued" || job.state === "running" ? (
+                    <button
+                      className="quiet"
+                      onClick={() => void cancelRenderJob(job.id)}
+                      type="button"
+                    >
+                      Cancel
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+            </section>
+          ) : null}
         </div>
       )}
-
-      {selectedEffect && !selectedIsOn && selection?.videoClips ? (
-        <p className="hint">Click an effect to put it on the selected clips.</p>
-      ) : null}
     </main>
   );
 }

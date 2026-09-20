@@ -56,6 +56,7 @@ If Creative Cloud Desktop does not launch, use the UPIA fallback in
 - `native/plugins/bloom`: thresholded, tinted highlight-glow CPU/Metal effect bundle.
 - `native/plugins/progressive-blur`: directional gradient-masked CPU/Metal blur effect bundle.
 - `native/plugins/crt`: timeline-stable phosphor-display CPU/Metal effect bundle.
+- `native/plugins/ascii`: procedural character-cell CPU/Metal effect bundle.
 - `mogrts`: After Effects authoring scripts and generated-template documentation.
 
 The implementation roadmap is tracked in [Roadmap](docs/roadmap.md), with decisions in [Architecture](docs/architecture.md) and the visual direction captured in the [style inventory](docs/style-inventory.md).

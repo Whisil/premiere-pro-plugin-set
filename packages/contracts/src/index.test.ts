@@ -157,4 +157,13 @@ describe("shared contracts", () => {
     ]);
     expect(crt?.presets).toHaveLength(3);
   });
+
+  it("defines the palette-aware real-time ASCII contract", () => {
+    const ascii = getEffectDefinition("com.moneymoves.ascii");
+    expect(ascii?.status).toBe("available");
+    expect(ascii?.parameters.map((parameter) => parameter.index)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9,
+    ]);
+    expect(ascii?.presets).toHaveLength(3);
+  });
 });

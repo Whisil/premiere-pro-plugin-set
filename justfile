@@ -308,3 +308,30 @@ native-crt-bundle profile:
 
 native-crt-install: native-crt-build
     ./scripts/install-native-dev.sh "{{target_dir}}/debug/MoneyMoves CRT.plugin"
+
+native-ascii-build: native-validate
+    cargo build -p moneymoves-ascii --target aarch64-apple-darwin
+    just native-ascii-bundle debug
+
+native-ascii-release: native-validate
+    cargo build -p moneymoves-ascii --release --target aarch64-apple-darwin
+    just native-ascii-bundle release
+
+native-ascii-bundle profile:
+    #!/bin/zsh
+    set -euo pipefail
+    bundle="{{target_dir}}/{{profile}}/MoneyMoves ASCII.plugin"
+    artifact_dir="{{target_dir}}/aarch64-apple-darwin/{{profile}}"
+    rm -rf "$bundle"
+    mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources"
+    cp "$artifact_dir/libmoneymoves_ascii.dylib" "$bundle/Contents/MacOS/MoneyMoves ASCII"
+    cp "$artifact_dir/moneymoves-ascii.rsrc" "$bundle/Contents/Resources/MoneyMoves ASCII.rsrc"
+    cp "$artifact_dir/moneymoves-ascii_PkgInfo" "$bundle/Contents/PkgInfo"
+    cp "$artifact_dir/moneymoves-ascii_Info.plist" "$bundle/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c 'Set :CFBundleIdentifier com.moneymoves.ascii' "$bundle/Contents/Info.plist"
+    codesign --force --deep --sign - "$bundle"
+    codesign --verify --deep --strict "$bundle"
+    print "Created $bundle"
+
+native-ascii-install: native-ascii-build
+    ./scripts/install-native-dev.sh "{{target_dir}}/debug/MoneyMoves ASCII.plugin"

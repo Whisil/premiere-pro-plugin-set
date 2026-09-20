@@ -3,6 +3,7 @@ use clap::{Parser, ValueEnum};
 use image::{DynamicImage, RgbaImage};
 use moneymoves_core::{
     RgbaImageF32,
+    ascii::{AsciiParams, apply as apply_ascii},
     crt::{CrtParams, apply as apply_crt},
     dither::{DitherParams, apply as apply_dither},
     dot_matrix::{DotMatrixParams, apply as apply_dot_matrix},
@@ -16,6 +17,7 @@ use std::{fs, path::PathBuf};
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
 enum Effect {
+    Ascii,
     RgbShift,
     FrameGate,
     Halftone,
@@ -77,6 +79,7 @@ fn main() -> Result<()> {
         image::open(&args.input).with_context(|| format!("opening {}", args.input.display()))?,
     );
     let output = match args.effect {
+        Effect::Ascii => apply_ascii(&input, load_params::<AsciiParams>(&args.params)?),
         Effect::RgbShift => apply_rgb_shift(&input, load_params::<RgbShiftParams>(&args.params)?),
         Effect::Halftone => apply_halftone(&input, load_params::<HalftoneParams>(&args.params)?),
         Effect::Dither => apply_dither(&input, &load_params::<DitherParams>(&args.params)?),

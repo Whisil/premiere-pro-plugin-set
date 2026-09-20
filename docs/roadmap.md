@@ -9,7 +9,7 @@ Status values are `done`, `in progress`, `blocked`, `queued`, and `deferred`. A 
 | 2. Frame Gate               | in progress | Signed bundle loads; exact-frame and one-undo tests pass      |
 | 3. Palette effects          | in progress | Six effects pass golden and Premiere lifecycle tests          |
 | 4. Multi-pass effects       | in progress | Four effects meet preview/export budgets                      |
-| 5. ASCII workflows          | queued      | Real-time effect and generated title workflows pass           |
+| 5. ASCII workflows          | in progress | Real-time effect and generated title workflows pass           |
 | 6. Maps                     | queued      | Deterministic 4K alpha clip renders/imports under 90 s        |
 | 7. Charts                   | deferred    | Resume only after an explicit product decision                |
 | 8. Advanced effects         | queued      | LinoCut, Voxel, and Blob Tracking approved independently      |
@@ -51,6 +51,10 @@ tooling outside Premiere.
   gradient and 4/8/16-sample quality modes.
 - Panel-driven CRT CPU/Metal bundle with timeline-stable grain/flicker,
   phosphor triads, scanlines, convergence, curvature, vignette, and glow.
+- Panel-driven real-time ASCII CPU/Metal bundle with six procedural glyph
+  families, source/mono/palette color modes, and custom colors.
+- Restored Generate workspace for local FIGlet ASCII title rendering,
+  cancellation, active-sequence matching, and automatic Premiere import.
 - Standalone CCX release packaging for normal installation without UXP Developer Tool.
 - Reproducible ten-frame ProRes 4444 alpha feasibility artifact.
 
