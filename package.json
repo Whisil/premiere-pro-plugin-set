@@ -15,6 +15,7 @@
     "dev:panel": "pnpm --filter @moneymoves/panel dev",
     "dev:renderer": "pnpm --filter @moneymoves/render-service dev",
     "build:panel": "pnpm --filter @moneymoves/panel build",
+    "package:panel": "./scripts/package-panel.sh",
     "build:renderer": "pnpm --filter @moneymoves/render-service build",
     "validate:alpha-spike": "pnpm --filter @moneymoves/contracts build && pnpm --filter @moneymoves/render-service build && node scripts/generate-alpha-spike.mjs"
   },

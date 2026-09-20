@@ -23,11 +23,16 @@ cargo run -p shaderbench -- --help
 
 Start the renderer with `pnpm dev:renderer`. Its first start creates a token at `~/Library/Application Support/MoneyMoves/renderer-token`. Copy that value into the panel Diagnostics field. Development mode uses `development-token` explicitly.
 
-Build the panel with `pnpm build:panel`, then add `apps/panel/dist/manifest.json`
-to UXP Developer Tool and load it in Premiere. Open it from **Window → UXP
-Plugins → MoneyMoves Toolkit**. It is one persistent panel: drag its title bar
-to dock it, or float it onto another display. After a rebuild, use UXP
-Developer Tool's reload action and reopen the panel.
+For a normal installed build, run `pnpm package:panel`, then double-click
+`artifacts/releases/MoneyMoves-Toolkit-<version>.ccx` and confirm the install in
+Creative Cloud Desktop. Quit and reopen Premiere, then open **Window → UXP
+Plugins → MoneyMoves Toolkit**. This installed build does not depend on UXP
+Developer Tool.
+
+For source debugging only, build the panel with `pnpm build:panel`, add
+`apps/panel/dist/manifest.json` to UXP Developer Tool, and load it in Premiere.
+The panel can be dragged onto another monitor or docked into the Premiere
+workspace. Use Developer Tool's reload action after rebuilding.
 
 The Vite build emits a single classic IIFE script for UXP. Do not point UDT at
 the source tree or a browser-development URL; Premiere's UXP runtime expects

@@ -22,10 +22,19 @@ setup](docs/development-setup.md).
 pnpm install
 pnpm check
 pnpm build
+pnpm package:panel
 cargo run -p shaderbench -- --help
 ```
 
 Run the renderer with `pnpm dev:renderer` and the panel build with `pnpm dev:panel`.
+
+## Install the panel without developer tools
+
+Run `pnpm package:panel`, then double-click the generated
+`artifacts/releases/MoneyMoves-Toolkit-<version>.ccx`. Creative Cloud Desktop
+will show the installation confirmation. Quit and reopen Premiere, then choose
+**Window → UXP Plugins → MoneyMoves Toolkit**. The installed panel does not
+require UXP Developer Tool; that tool is only used for debugging source builds.
 
 ## Components
 
