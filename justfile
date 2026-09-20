@@ -119,3 +119,30 @@ native-dot-matrix-bundle profile:
 
 native-dot-matrix-install: native-dot-matrix-build
     ./scripts/install-native-dev.sh "{{target_dir}}/debug/MoneyMoves Dot Matrix.plugin"
+
+native-eight-bit-build: native-validate
+    cargo build -p moneymoves-eight-bit --target aarch64-apple-darwin
+    just native-eight-bit-bundle debug
+
+native-eight-bit-release: native-validate
+    cargo build -p moneymoves-eight-bit --release --target aarch64-apple-darwin
+    just native-eight-bit-bundle release
+
+native-eight-bit-bundle profile:
+    #!/bin/zsh
+    set -euo pipefail
+    bundle="{{target_dir}}/{{profile}}/MoneyMoves 8-bit.plugin"
+    artifact_dir="{{target_dir}}/aarch64-apple-darwin/{{profile}}"
+    rm -rf "$bundle"
+    mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources"
+    cp "$artifact_dir/libmoneymoves_eight_bit.dylib" "$bundle/Contents/MacOS/MoneyMoves 8-bit"
+    cp "$artifact_dir/moneymoves-eight-bit.rsrc" "$bundle/Contents/Resources/MoneyMoves 8-bit.rsrc"
+    cp "$artifact_dir/moneymoves-eight-bit_PkgInfo" "$bundle/Contents/PkgInfo"
+    cp "$artifact_dir/moneymoves-eight-bit_Info.plist" "$bundle/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c 'Set :CFBundleIdentifier com.moneymoves.eight-bit' "$bundle/Contents/Info.plist"
+    codesign --force --deep --sign - "$bundle"
+    codesign --verify --deep --strict "$bundle"
+    print "Created $bundle"
+
+native-eight-bit-install: native-eight-bit-build
+    ./scripts/install-native-dev.sh "{{target_dir}}/debug/MoneyMoves 8-bit.plugin"

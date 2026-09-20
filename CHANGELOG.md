@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.4.0 - Unreleased
+## 0.5.0 - Unreleased
+
+- Add the panel-driven 8-bit CPU/Metal effect with pixel blocks, OKLab
+  quantization, named palettes, 2–8 custom colors, and presets.
+
+## 0.4.0 - 2026-09-20
 
 - Add the panel-driven Dot Matrix CPU/Metal effect with branded palettes,
   custom colors, luminance-sized dots, and named presets.

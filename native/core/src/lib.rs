@@ -1,5 +1,6 @@
 pub mod dither;
 pub mod dot_matrix;
+pub mod eight_bit;
 pub mod frame_gate;
 pub mod halftone;
 pub mod palette;

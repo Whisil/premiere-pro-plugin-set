@@ -1,0 +1,31 @@
+[package]
+name = "moneymoves-eight-bit"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+build = "build.rs"
+
+[lib]
+crate-type = ["cdylib"]
+
+[package.metadata.prgpu]
+match-name = "com.moneymoves.eight-bit"
+display-name = "MoneyMoves 8-bit"
+category = "MoneyMoves"
+support-url = "https://github.com/davidgajdamaka/moneymoves-plugin-set"
+gpu = true
+expansion = false
+
+[dependencies]
+after-effects.workspace = true
+bytemuck.workspace = true
+premiere.workspace = true
+prgpu.workspace = true
+
+[build-dependencies]
+prgpu-build.workspace = true
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(catch_panics)", "cfg(does_dialog)", "cfg(with_premiere)", "cfg(threaded_rendering)"] }

@@ -42,6 +42,7 @@ tooling outside Premiere.
 - Panel-driven arm64 Frame Gate bundle with clip-local timing metadata, CPU/Metal paths, hidden-frame alpha output, and four presets.
 - Production RGB Shift edge modes/presets and a panel-driven Halftone CPU/Metal bundle with named palettes and custom colors.
 - Panel-driven Dot Matrix CPU/Metal bundle with branded/custom palettes and luminance-sized dots.
+- Panel-driven 8-bit CPU/Metal bundle with pixel blocks, OKLab quantization, and 2–8 custom colors.
 - Standalone CCX release packaging for normal installation without UXP Developer Tool.
 - Reproducible ten-frame ProRes 4444 alpha feasibility artifact.
 

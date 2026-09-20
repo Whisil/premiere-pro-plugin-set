@@ -87,4 +87,13 @@ describe("shared contracts", () => {
     ]);
     expect(dotMatrix?.presets).toHaveLength(3);
   });
+
+  it("defines the 2–8 color panel contract for 8-bit", () => {
+    const eightBit = getEffectDefinition("com.moneymoves.eight-bit");
+    expect(eightBit?.status).toBe("available");
+    expect(eightBit?.parameters.map((parameter) => parameter.index)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
+    ]);
+    expect(eightBit?.presets).toHaveLength(3);
+  });
 });

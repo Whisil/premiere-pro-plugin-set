@@ -168,6 +168,28 @@ export type EffectDefinition = z.infer<typeof effectDefinitionSchema>;
 
 export const brandTokens = brandTokensSchema.parse(tokens);
 
+const EFFECT_PALETTE_OPTIONS = [
+  { id: "custom", label: "Custom", value: 1 },
+  { id: "moneymoves-core", label: "MoneyMoves Core", value: 2 },
+  { id: "editorial-mono", label: "Editorial Mono", value: 3 },
+  { id: "signal-blue", label: "Signal Blue", value: 4 },
+  { id: "terminal", label: "Terminal", value: 5 },
+  { id: "phosphor", label: "Phosphor", value: 6 },
+  { id: "amber", label: "Amber", value: 7 },
+  { id: "paper", label: "Paper", value: 8 },
+] as const;
+
+const EIGHT_BIT_COLOR_DEFAULTS = [
+  "#FF2448",
+  "#0B0B70",
+  "#FFF6D8",
+  "#39E39D",
+  "#FFCC28",
+  "#F229D4",
+  "#080808",
+  "#3D8BFF",
+] as const;
+
 export const FRAME_GATE_PRESETS: readonly EffectPreset[] = [
   {
     id: "throttle-in",
@@ -736,9 +758,122 @@ export const EFFECT_REGISTRY: readonly EffectDefinition[] =
       ],
       schemaVersion: SCHEMA_VERSION,
     },
+    {
+      id: "eight-bit",
+      name: "8-bit",
+      matchName: "com.moneymoves.eight-bit",
+      category: "palette",
+      status: "available",
+      description:
+        "Pixel blocks with perceptual OKLab quantization into 2–8 colors.",
+      parameters: [
+        {
+          key: "pixelSize",
+          label: "Pixel size",
+          index: 1,
+          type: "number",
+          defaultValue: 8,
+          min: 1,
+          max: 256,
+          step: 1,
+          unit: "pixels",
+          keyframeable: true,
+        },
+        {
+          key: "colorCount",
+          label: "Color count",
+          index: 2,
+          type: "number",
+          defaultValue: 6,
+          min: 2,
+          max: 8,
+          step: 1,
+          keyframeable: true,
+        },
+        {
+          key: "palette",
+          label: "Palette",
+          index: 3,
+          type: "select",
+          defaultValue: 2,
+          options: [...EFFECT_PALETTE_OPTIONS],
+          keyframeable: false,
+        },
+        {
+          key: "quantization",
+          label: "Quantization",
+          index: 4,
+          type: "number",
+          defaultValue: 1,
+          min: 0,
+          max: 1,
+          step: 0.01,
+          unit: "percent",
+          keyframeable: true,
+        },
+        ...EIGHT_BIT_COLOR_DEFAULTS.map((defaultValue, colorIndex) => ({
+          key: `color${colorIndex + 1}`,
+          label: `Color ${colorIndex + 1}`,
+          index: colorIndex + 5,
+          type: "color" as const,
+          defaultValue,
+          keyframeable: true,
+        })),
+        {
+          key: "mix",
+          label: "Mix",
+          index: 13,
+          type: "number",
+          defaultValue: 1,
+          min: 0,
+          max: 1,
+          step: 0.01,
+          unit: "percent",
+          keyframeable: true,
+        },
+      ],
+      presets: [
+        {
+          id: "money-console",
+          name: "Money Console",
+          matchName: "com.moneymoves.eight-bit",
+          parameters: {
+            pixelSize: 8,
+            colorCount: 6,
+            palette: "moneymoves-core",
+            quantization: 1,
+            mix: 1,
+          },
+        },
+        {
+          id: "terminal-4",
+          name: "Terminal 4",
+          matchName: "com.moneymoves.eight-bit",
+          parameters: {
+            pixelSize: 10,
+            colorCount: 4,
+            palette: "terminal",
+            quantization: 1,
+            mix: 1,
+          },
+        },
+        {
+          id: "soft-pixel",
+          name: "Soft Pixel",
+          matchName: "com.moneymoves.eight-bit",
+          parameters: {
+            pixelSize: 6,
+            colorCount: 8,
+            palette: "signal-blue",
+            quantization: 0.65,
+            mix: 0.85,
+          },
+        },
+      ],
+      schemaVersion: SCHEMA_VERSION,
+    },
     ...[
       ["chromatic-aberration", "Chromatic Aberration", "stylize"],
-      ["eight-bit", "8-bit", "palette"],
       ["dither", "Dither", "palette"],
       ["barrel-blur", "Barrel Blur", "stylize"],
       ["bloom", "Bloom", "stylize"],
