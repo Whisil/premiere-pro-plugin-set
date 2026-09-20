@@ -31,8 +31,9 @@ bool frame_is_visible(FrameGateParams params)
     uint head_mask = uint(round(params.head_mask));
     uint tail_mask = uint(round(params.tail_mask));
 
-    bool use_head = params.mode == 1u || params.mode == 3u;
-    bool use_tail = params.mode == 2u || params.mode == 3u;
+    // prgpu normalizes Adobe's 1-based popup values to 0-based indices.
+    bool use_head = params.mode == 0u || params.mode == 2u;
+    bool use_tail = params.mode == 1u || params.mode == 2u;
     uint head_budget = use_head && use_tail ? (total + 1u) / 2u : total;
     uint head_span = use_head ? min(head_length, head_budget) : 0u;
     uint tail_span = use_tail ? min(tail_length, total - head_span) : 0u;
