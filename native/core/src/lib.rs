@@ -7,6 +7,7 @@ pub mod eight_bit;
 pub mod frame_gate;
 pub mod halftone;
 pub mod palette;
+pub mod progressive_blur;
 pub mod rgb_shift;
 
 #[derive(Clone, Debug, PartialEq)]

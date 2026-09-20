@@ -7,6 +7,7 @@ use moneymoves_core::{
     dot_matrix::{DotMatrixParams, apply as apply_dot_matrix},
     frame_gate::FrameGateParams,
     halftone::{HalftoneParams, apply as apply_halftone},
+    progressive_blur::{ProgressiveBlurParams, apply as apply_progressive_blur},
     rgb_shift::{RgbShiftParams, apply as apply_rgb_shift},
 };
 use serde::de::DeserializeOwned;
@@ -19,6 +20,7 @@ enum Effect {
     Halftone,
     Dither,
     DotMatrix,
+    ProgressiveBlur,
 }
 
 #[derive(Debug, Parser)]
@@ -78,6 +80,9 @@ fn main() -> Result<()> {
         Effect::Dither => apply_dither(&input, &load_params::<DitherParams>(&args.params)?),
         Effect::DotMatrix => {
             apply_dot_matrix(&input, load_params::<DotMatrixParams>(&args.params)?)
+        }
+        Effect::ProgressiveBlur => {
+            apply_progressive_blur(&input, load_params::<ProgressiveBlurParams>(&args.params)?)
         }
         Effect::FrameGate => {
             let params = load_params::<FrameGateParams>(&args.params)?;

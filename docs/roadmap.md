@@ -8,7 +8,7 @@ Status values are `done`, `in progress`, `blocked`, `queued`, and `deferred`. A 
 | 1. Repository foundation    | done        | CI is green; local setup is reproducible                      |
 | 2. Frame Gate               | in progress | Signed bundle loads; exact-frame and one-undo tests pass      |
 | 3. Palette effects          | in progress | Six effects pass golden and Premiere lifecycle tests          |
-| 4. Multi-pass effects       | queued      | Four effects meet preview/export budgets                      |
+| 4. Multi-pass effects       | in progress | Four effects meet preview/export budgets                      |
 | 5. ASCII workflows          | queued      | Real-time effect and generated title workflows pass           |
 | 6. Maps                     | queued      | Deterministic 4K alpha clip renders/imports under 90 s        |
 | 7. Charts                   | deferred    | Resume only after an explicit product decision                |
@@ -47,6 +47,8 @@ tooling outside Premiere.
 - Panel-driven Chromatic Aberration CPU/Metal bundle with radial separation, optical-center controls, and edge modes.
 - Panel-driven Barrel Blur CPU/Metal bundle with barrel/pincushion distortion and 4/8/16-sample quality modes.
 - Panel-driven Bloom CPU/Metal bundle with tinted threshold glow and 4/8/16-sample quality modes.
+- Panel-driven Progressive Blur CPU/Metal bundle with a keyframable directional
+  gradient and 4/8/16-sample quality modes.
 - Standalone CCX release packaging for normal installation without UXP Developer Tool.
 - Reproducible ten-frame ProRes 4444 alpha feasibility artifact.
 

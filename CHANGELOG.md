@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.10.0 - Unreleased
+
+- Add panel-driven Progressive Blur with a keyframable directional gradient,
+  start/end range, feather, inversion, 4/8/16-sample quality modes, and CPU
+  and Metal render paths.
+- Add the Progressive Blur reference renderer to shaderbench and a signed
+  Apple-Silicon bundle/install recipe.
+
 ## 0.9.2 - Unreleased
 
 - Replace the four-tab panel with a clip-driven apply / remove / slider

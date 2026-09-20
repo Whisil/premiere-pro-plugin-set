@@ -134,4 +134,18 @@ describe("shared contracts", () => {
     ]);
     expect(bloom?.presets).toHaveLength(3);
   });
+
+  it("defines the directional Progressive Blur contract", () => {
+    const progressiveBlur = getEffectDefinition(
+      "com.moneymoves.progressive-blur",
+    );
+    expect(progressiveBlur?.status).toBe("available");
+    expect(
+      progressiveBlur?.parameters.map((parameter) => parameter.index),
+    ).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(
+      progressiveBlur?.parameters.every((parameter) => parameter.index > 0),
+    ).toBe(true);
+    expect(progressiveBlur?.presets).toHaveLength(3);
+  });
 });
