@@ -281,3 +281,30 @@ native-progressive-blur-bundle profile:
 
 native-progressive-blur-install: native-progressive-blur-build
     ./scripts/install-native-dev.sh "{{target_dir}}/debug/MoneyMoves Progressive Blur.plugin"
+
+native-crt-build: native-validate
+    cargo build -p moneymoves-crt --target aarch64-apple-darwin
+    just native-crt-bundle debug
+
+native-crt-release: native-validate
+    cargo build -p moneymoves-crt --release --target aarch64-apple-darwin
+    just native-crt-bundle release
+
+native-crt-bundle profile:
+    #!/bin/zsh
+    set -euo pipefail
+    bundle="{{target_dir}}/{{profile}}/MoneyMoves CRT.plugin"
+    artifact_dir="{{target_dir}}/aarch64-apple-darwin/{{profile}}"
+    rm -rf "$bundle"
+    mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources"
+    cp "$artifact_dir/libmoneymoves_crt.dylib" "$bundle/Contents/MacOS/MoneyMoves CRT"
+    cp "$artifact_dir/moneymoves-crt.rsrc" "$bundle/Contents/Resources/MoneyMoves CRT.rsrc"
+    cp "$artifact_dir/moneymoves-crt_PkgInfo" "$bundle/Contents/PkgInfo"
+    cp "$artifact_dir/moneymoves-crt_Info.plist" "$bundle/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c 'Set :CFBundleIdentifier com.moneymoves.crt' "$bundle/Contents/Info.plist"
+    codesign --force --deep --sign - "$bundle"
+    codesign --verify --deep --strict "$bundle"
+    print "Created $bundle"
+
+native-crt-install: native-crt-build
+    ./scripts/install-native-dev.sh "{{target_dir}}/debug/MoneyMoves CRT.plugin"

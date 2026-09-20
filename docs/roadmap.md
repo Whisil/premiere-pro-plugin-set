@@ -49,6 +49,8 @@ tooling outside Premiere.
 - Panel-driven Bloom CPU/Metal bundle with tinted threshold glow and 4/8/16-sample quality modes.
 - Panel-driven Progressive Blur CPU/Metal bundle with a keyframable directional
   gradient and 4/8/16-sample quality modes.
+- Panel-driven CRT CPU/Metal bundle with timeline-stable grain/flicker,
+  phosphor triads, scanlines, convergence, curvature, vignette, and glow.
 - Standalone CCX release packaging for normal installation without UXP Developer Tool.
 - Reproducible ten-frame ProRes 4444 alpha feasibility artifact.
 

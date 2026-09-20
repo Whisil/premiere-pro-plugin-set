@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.11.0 - Unreleased
+
+- Add panel-driven CRT with curvature, scanlines, phosphor triads, RGB
+  convergence, deterministic timeline-locked noise/flicker, vignette, glow,
+  and CPU/Metal render paths.
+- Add Clean Monitor, Money CRT, and Broken Signal presets plus shaderbench and
+  signed Apple-Silicon bundle/install support.
+
 ## 0.10.0 - Unreleased
 
 - Add panel-driven Progressive Blur with a keyframable directional gradient,

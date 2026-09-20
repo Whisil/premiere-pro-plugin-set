@@ -1,6 +1,7 @@
 pub mod barrel_blur;
 pub mod bloom;
 pub mod chromatic_aberration;
+pub mod crt;
 pub mod dither;
 pub mod dot_matrix;
 pub mod eight_bit;

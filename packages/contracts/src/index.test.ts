@@ -148,4 +148,13 @@ describe("shared contracts", () => {
     ).toBe(true);
     expect(progressiveBlur?.presets).toHaveLength(3);
   });
+
+  it("defines the timeline-animated CRT contract", () => {
+    const crt = getEffectDefinition("com.moneymoves.crt");
+    expect(crt?.status).toBe("available");
+    expect(crt?.parameters.map((parameter) => parameter.index)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9,
+    ]);
+    expect(crt?.presets).toHaveLength(3);
+  });
 });

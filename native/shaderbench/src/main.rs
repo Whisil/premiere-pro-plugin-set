@@ -3,6 +3,7 @@ use clap::{Parser, ValueEnum};
 use image::{DynamicImage, RgbaImage};
 use moneymoves_core::{
     RgbaImageF32,
+    crt::{CrtParams, apply as apply_crt},
     dither::{DitherParams, apply as apply_dither},
     dot_matrix::{DotMatrixParams, apply as apply_dot_matrix},
     frame_gate::FrameGateParams,
@@ -21,6 +22,7 @@ enum Effect {
     Dither,
     DotMatrix,
     ProgressiveBlur,
+    Crt,
 }
 
 #[derive(Debug, Parser)]
@@ -84,6 +86,11 @@ fn main() -> Result<()> {
         Effect::ProgressiveBlur => {
             apply_progressive_blur(&input, load_params::<ProgressiveBlurParams>(&args.params)?)
         }
+        Effect::Crt => apply_crt(
+            &input,
+            load_params::<CrtParams>(&args.params)?,
+            args.frame as f32 / 30.0,
+        ),
         Effect::FrameGate => {
             let params = load_params::<FrameGateParams>(&args.params)?;
             let mut output = input;

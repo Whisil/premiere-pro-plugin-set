@@ -31,7 +31,7 @@ plugin state during installation.
 
 The current panel package is:
 
-`artifacts/releases/MoneyMoves-Toolkit-0.10.0.ccx`
+`artifacts/releases/MoneyMoves-Toolkit-0.11.0.ccx`
 
 1. Quit Premiere Pro.
 2. Open **Terminal**.
@@ -40,7 +40,7 @@ The current panel package is:
    ```sh
    cd "/Users/davidgajdamaka/Desktop/code/moneymoves-plugin-set"
    cd artifacts/releases
-   /usr/bin/shasum -a 256 -c MoneyMoves-Toolkit-0.10.0.ccx.sha256
+   /usr/bin/shasum -a 256 -c MoneyMoves-Toolkit-0.11.0.ccx.sha256
    ```
 
    The result must end with `OK`.
@@ -48,7 +48,7 @@ The current panel package is:
 4. Normally, install the `.ccx` through Adobe's Unified Plugin Installer Agent:
 
    ```sh
-   CCX="/Users/davidgajdamaka/Desktop/code/moneymoves-plugin-set/artifacts/releases/MoneyMoves-Toolkit-0.10.0.ccx"
+   CCX="/Users/davidgajdamaka/Desktop/code/moneymoves-plugin-set/artifacts/releases/MoneyMoves-Toolkit-0.11.0.ccx"
    sudo "$UPIA" --install "$CCX"
    ```
 
@@ -76,6 +76,7 @@ just native-chromatic-install
 just native-barrel-blur-install
 just native-bloom-install
 just native-progressive-blur-install
+just native-crt-install
 ```
 
 Restart Premiere after installing native bundles. They are copied to:

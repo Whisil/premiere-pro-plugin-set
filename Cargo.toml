@@ -5,6 +5,7 @@ members = [
   "native/plugins/barrel-blur",
   "native/plugins/bloom",
   "native/plugins/chromatic-aberration",
+  "native/plugins/crt",
   "native/plugins/dot-matrix",
   "native/plugins/dither",
   "native/plugins/eight-bit",
@@ -16,7 +17,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.10.0"
+version = "0.11.0"
 edition = "2024"
 license = "MIT"
 authors = ["MoneyMoves"]
