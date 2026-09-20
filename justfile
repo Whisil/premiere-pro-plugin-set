@@ -38,3 +38,30 @@ native-rgb-bundle profile:
 
 native-rgb-install: native-rgb-build
     ./scripts/install-native-dev.sh "{{target_dir}}/debug/{{plugin_name}}.plugin"
+
+native-frame-build: native-validate
+    cargo build -p moneymoves-frame-gate --target aarch64-apple-darwin
+    just native-frame-bundle debug
+
+native-frame-release: native-validate
+    cargo build -p moneymoves-frame-gate --release --target aarch64-apple-darwin
+    just native-frame-bundle release
+
+native-frame-bundle profile:
+    #!/bin/zsh
+    set -euo pipefail
+    bundle="{{target_dir}}/{{profile}}/MoneyMoves Frame Gate.plugin"
+    artifact_dir="{{target_dir}}/aarch64-apple-darwin/{{profile}}"
+    rm -rf "$bundle"
+    mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources"
+    cp "$artifact_dir/libmoneymoves_frame_gate.dylib" "$bundle/Contents/MacOS/MoneyMoves Frame Gate"
+    cp "$artifact_dir/moneymoves-frame-gate.rsrc" "$bundle/Contents/Resources/MoneyMoves Frame Gate.rsrc"
+    cp "$artifact_dir/moneymoves-frame-gate_PkgInfo" "$bundle/Contents/PkgInfo"
+    cp "$artifact_dir/moneymoves-frame-gate_Info.plist" "$bundle/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c 'Set :CFBundleIdentifier com.moneymoves.frame-gate' "$bundle/Contents/Info.plist"
+    codesign --force --deep --sign - "$bundle"
+    codesign --verify --deep --strict "$bundle"
+    print "Created $bundle"
+
+native-frame-install: native-frame-build
+    ./scripts/install-native-dev.sh "{{target_dir}}/debug/MoneyMoves Frame Gate.plugin"

@@ -12,9 +12,9 @@ The repository foundation and first vertical slices are implemented. RGB Shift
 now builds as an arm64 Adobe plugin with software and Premiere GPU entry
 points, packages with PiPL metadata, signs successfully, and installs per user.
 The panel-first Phase 0 work adds contextual Home, Effects, Generate, and
-Diagnostics workflows before Frame Gate begins. Premiere 25.6.4 host rendering
-and undo validation remain the active Phase 0 gates; see [Development
-setup](docs/development-setup.md).
+Diagnostics workflows. Frame Gate now has a signed CPU/Metal bundle and a
+complete panel surface. Premiere 25.6.4 host rendering and undo validation
+remain active local gates; see [Development setup](docs/development-setup.md).
 
 ## Commands
 
@@ -44,6 +44,7 @@ require UXP Developer Tool; that tool is only used for debugging source builds.
 - `native/core`: deterministic CPU reference implementations used by tests and shaderbench.
 - `native/shaderbench`: headless PNG harness for rapid effect iteration.
 - `native/plugins/rgb-shift`: first loadable CPU/Metal Adobe effect bundle.
+- `native/plugins/frame-gate`: reversible CPU/Metal frame-throttle effect bundle.
 - `mogrts`: After Effects authoring scripts and generated-template documentation.
 
 The implementation roadmap is tracked in [Roadmap](docs/roadmap.md), with decisions in [Architecture](docs/architecture.md) and the visual direction captured in the [style inventory](docs/style-inventory.md).

@@ -6,6 +6,12 @@ import {
 } from "@moneymoves/contracts";
 
 const PREMIERE_TICKS_PER_SECOND = 254_016_000_000;
+const FRAME_GATE_MATCH_NAME = "com.moneymoves.frame-gate";
+const FRAME_GATE_INTERNAL_PARAMS = {
+  clipStartSeconds: 6,
+  sequenceFps: 7,
+  totalFrames: 8,
+} as const;
 let premiereProvider: (() => any) | undefined;
 
 export interface SequenceFormat {
@@ -45,6 +51,30 @@ export function fpsFromTimebase(timebase: string): number {
     );
   }
   return Math.round(fps * 1000) / 1000;
+}
+
+export function frameGateTimingFromTicks(
+  startTicks: string,
+  durationTicks: string,
+  timebase: string,
+): { clipStartSeconds: number; sequenceFps: number; totalFrames: number } {
+  const ticksPerFrame = Number(timebase);
+  const start = Number(startTicks);
+  const duration = Number(durationTicks);
+  if (
+    !Number.isFinite(start) ||
+    !Number.isFinite(duration) ||
+    !Number.isFinite(ticksPerFrame) ||
+    duration <= 0 ||
+    ticksPerFrame <= 0
+  ) {
+    throw new Error("Premiere returned invalid clip timing for Frame Gate.");
+  }
+  return {
+    clipStartSeconds: start / PREMIERE_TICKS_PER_SECOND,
+    sequenceFps: PREMIERE_TICKS_PER_SECOND / ticksPerFrame,
+    totalFrames: Math.max(1, Math.round(duration / ticksPerFrame)),
+  };
 }
 
 function getPremiere(): any {
@@ -180,6 +210,31 @@ async function createSetValueActions(
   return actions;
 }
 
+async function createFrameGateTimingActions(
+  prepared: Array<{ clip: any; component: any }>,
+  sequence: any,
+): Promise<any[]> {
+  const timebase = String(await sequence.getTimebase());
+  const actions: any[] = [];
+  for (const { clip, component } of prepared) {
+    const [start, duration] = await Promise.all([
+      clip.getStartTime(),
+      clip.getDuration(),
+    ]);
+    const timing = frameGateTimingFromTicks(
+      String(start.ticks),
+      String(duration.ticks),
+      timebase,
+    );
+    for (const [key, index] of Object.entries(FRAME_GATE_INTERNAL_PARAMS)) {
+      const param = component.getParam(index);
+      const keyframe = param.createKeyframe(timing[key as keyof typeof timing]);
+      actions.push(param.createSetValueAction(keyframe, true));
+    }
+  }
+  return actions;
+}
+
 async function getAppliedComponents(
   ppro: any,
   sequence: any,
@@ -297,7 +352,7 @@ export async function applyEffectPreset(preset: EffectPreset): Promise<number> {
       const component =
         existing ??
         (await ppro.VideoFilterFactory.createComponent(preset.matchName));
-      return { chain, component, existing };
+      return { clip, chain, component, existing };
     }),
   );
   const appendActions = prepared
@@ -310,9 +365,14 @@ export async function applyEffectPreset(preset: EffectPreset): Promise<number> {
     definition,
     preset.parameters,
   );
+  const timingActions =
+    preset.matchName === FRAME_GATE_MATCH_NAME
+      ? await createFrameGateTimingActions(prepared, sequence)
+      : [];
   runTransaction(project, `Apply ${preset.name}`, [
     ...appendActions,
     ...parameterActions,
+    ...timingActions,
   ]);
   return clips.length;
 }

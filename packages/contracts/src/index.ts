@@ -177,8 +177,8 @@ export const FRAME_GATE_PRESETS: readonly EffectPreset[] = [
       mode: "head",
       headLength: 5,
       headMask: 21,
-      tailLength: 0,
-      tailMask: 0,
+      tailLength: 5,
+      tailMask: 21,
     },
   },
   {
@@ -187,8 +187,8 @@ export const FRAME_GATE_PRESETS: readonly EffectPreset[] = [
     matchName: "com.moneymoves.frame-gate",
     parameters: {
       mode: "tail",
-      headLength: 0,
-      headMask: 0,
+      headLength: 5,
+      headMask: 21,
       tailLength: 5,
       tailMask: 21,
     },
@@ -226,7 +226,7 @@ export const EFFECT_REGISTRY: readonly EffectDefinition[] =
       name: "Frame Gate",
       matchName: "com.moneymoves.frame-gate",
       category: "transition",
-      status: "planned",
+      status: "available",
       description:
         "Transparent throttle and stutter frames without touching audio.",
       parameters: [

@@ -63,9 +63,9 @@ describe("shared contracts", () => {
     expect(EFFECT_REGISTRY).toHaveLength(15);
   });
 
-  it("keeps Frame Gate unavailable until its native bundle exists", () => {
+  it("exposes Frame Gate after its native bundle is implemented", () => {
     const frameGate = getEffectDefinition("com.moneymoves.frame-gate");
-    expect(frameGate?.status).toBe("planned");
+    expect(frameGate?.status).toBe("available");
     expect(frameGate?.presets).toEqual(FRAME_GATE_PRESETS);
   });
 });

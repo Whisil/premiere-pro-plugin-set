@@ -1,6 +1,13 @@
 # Changelog
 
-## 0.1.0 - Unreleased
+## 0.2.0 - Unreleased
+
+- Add the panel-driven Frame Gate native effect with CPU/Metal rendering,
+  clip-local head/tail timing, reversible presets, and batch undo support.
+- Add reproducible standalone CCX packaging so normal panel use does not
+  require UXP Developer Tool.
+
+## 0.1.0 - 2026-09-20
 
 - Establish the pnpm/Cargo monorepo, shared contracts, UXP panel, local renderer, native reference kernels, MOGRT authoring scaffold, CI, and developer documentation.
 - Add active-sequence output detection to the panel and expand host diagnostics.

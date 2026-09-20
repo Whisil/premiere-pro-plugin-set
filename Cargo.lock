@@ -1040,14 +1040,25 @@ dependencies = [
 
 [[package]]
 name = "moneymoves-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde",
 ]
 
 [[package]]
+name = "moneymoves-frame-gate"
+version = "0.2.0"
+dependencies = [
+ "bytemuck",
+ "exaecut-after-effects",
+ "exaecut-premiere",
+ "prgpu",
+ "prgpu-build",
+]
+
+[[package]]
 name = "moneymoves-rgb-shift"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bytemuck",
  "exaecut-after-effects",
@@ -1763,7 +1774,7 @@ dependencies = [
 
 [[package]]
 name = "shaderbench"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",

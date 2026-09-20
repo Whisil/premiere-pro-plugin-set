@@ -6,7 +6,7 @@ Status values are `done`, `in progress`, `blocked`, `queued`, and `deferred`. A 
 | --------------------------- | ----------- | ------------------------------------------------------------- |
 | 0. Research and feasibility | in progress | Three active Adobe-host spikes pass with recorded evidence    |
 | 1. Repository foundation    | done        | CI is green; local setup is reproducible                      |
-| 2. Frame Gate               | queued      | Signed bundle loads; exact-frame and one-undo tests pass      |
+| 2. Frame Gate               | in progress | Signed bundle loads; exact-frame and one-undo tests pass      |
 | 3. Palette effects          | queued      | Six effects pass golden and Premiere lifecycle tests          |
 | 4. Multi-pass effects       | queued      | Four effects meet preview/export budgets                      |
 | 5. ASCII workflows          | queued      | Real-time effect and generated title workflows pass           |
@@ -39,6 +39,8 @@ tooling outside Premiere.
 - Channel-reference style inventory, production typography roles, and reference-derived palettes.
 - CPU/Slang reference implementations for Halftone, Dot Matrix, and Dither.
 - Loadable arm64 RGB Shift bundle with AE-style software and Premiere Metal entry points, PiPL packaging, ad-hoc signing, and per-user installation.
+- Panel-driven arm64 Frame Gate bundle with clip-local timing metadata, CPU/Metal paths, hidden-frame alpha output, and four presets.
+- Standalone CCX release packaging for normal installation without UXP Developer Tool.
 - Reproducible ten-frame ProRes 4444 alpha feasibility artifact.
 
 ## Phase 0 gates

@@ -2,12 +2,13 @@
 resolver = "2"
 members = [
   "native/core",
+  "native/plugins/frame-gate",
   "native/plugins/rgb-shift",
   "native/shaderbench",
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 license = "MIT"
 authors = ["MoneyMoves"]

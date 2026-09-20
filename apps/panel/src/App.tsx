@@ -505,6 +505,9 @@ export function App() {
     const rgbShiftInstalled = installedEffectMatchNames.includes(
       rgbShift.matchName,
     );
+    const frameGateInstalled = installedEffectMatchNames.includes(
+      frameGate.matchName,
+    );
     return (
       <>
         <section className="context-card">
@@ -535,19 +538,38 @@ export function App() {
             <div>
               <h2>Quick Actions</h2>
               <p className="hint">
-                Frame Gate is the next native bundle in the roadmap.
+                Apply a reversible frame throttle without changing linked audio.
               </p>
             </div>
-            <span className="status planned">Planned</span>
+            <span
+              className={
+                frameGateInstalled ? "status available" : "status planned"
+              }
+            >
+              {frameGateInstalled ? "Installed" : "Missing bundle"}
+            </span>
           </div>
           <div className="button-grid">
             {FRAME_GATE_PRESETS.map((preset) => (
               <button
                 className="quiet"
-                disabled
+                disabled={busy || !frameGateInstalled || !selection?.videoClips}
                 key={preset.id}
-                onClick={() => undefined}
-                title={`${frameGate.name} has not been installed yet.`}
+                onClick={() =>
+                  void run(async () => {
+                    const count = await applyEffectPreset(preset);
+                    await refreshEffectState();
+                    setNotice({
+                      tone: "success",
+                      message: `${preset.name} applied to ${count} clip(s).`,
+                    });
+                  })
+                }
+                title={
+                  frameGateInstalled
+                    ? `Apply ${preset.name} to selected video clips.`
+                    : `${frameGate.name} native bundle is not installed.`
+                }
               >
                 {preset.name}
               </button>

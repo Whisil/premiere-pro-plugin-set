@@ -3,6 +3,7 @@ import { getEffectDefinition } from "@moneymoves/contracts";
 import {
   applyEffect,
   fpsFromTimebase,
+  frameGateTimingFromTicks,
   getSelectionSummary,
   inspectEffectSelection,
   removeEffect,
@@ -32,6 +33,16 @@ describe("Premiere sequence timebase conversion", () => {
     expect(() => fpsFromTimebase("not-a-number")).toThrow(
       /invalid sequence timebase/,
     );
+  });
+
+  it("converts clip timing into Frame Gate render metadata", () => {
+    expect(
+      frameGateTimingFromTicks("254016000000", "1270080000000", "10160640000"),
+    ).toEqual({
+      clipStartSeconds: 1,
+      sequenceFps: 25,
+      totalFrames: 125,
+    });
   });
 });
 
@@ -65,6 +76,21 @@ describe("Premiere effect transactions", () => {
       "Remove RGB Shift",
     );
     expect(host.addAction).toHaveBeenCalledTimes(20);
+  });
+
+  it("applies Frame Gate and clip timing in one undo transaction", async () => {
+    const host = createPremiereMock(1);
+    setPremiereProviderForTesting(() => host.ppro);
+
+    await expect(
+      applyEffect("com.moneymoves.frame-gate", "Frame Gate"),
+    ).resolves.toBe(1);
+    expect(host.executeTransaction).toHaveBeenCalledTimes(1);
+    expect(host.executeTransaction).toHaveBeenCalledWith(
+      expect.any(Function),
+      "Apply Frame Gate",
+    );
+    expect(host.addAction).toHaveBeenCalledTimes(4);
   });
 
   it("reports mixed RGB Shift values across selected clips", async () => {
@@ -147,8 +173,14 @@ function createPremiereMock(
   const addAction = vi.fn();
   const parameterAction = Symbol("parameter");
 
-  function createComponentForClip(amount = 12) {
-    const values = [amount, 0, 1, 0, -1, 1];
+  function createComponentForClip(
+    amount = 12,
+    matchName = "com.moneymoves.rgb-shift",
+  ) {
+    const values =
+      matchName === "com.moneymoves.frame-gate"
+        ? [3, 5, 21, 5, 21, 0, 30, 300]
+        : [amount, 0, 1, 0, -1, 1];
     const params = values.map((value) => ({
       getValueAtTime: vi.fn(async () => value),
       isTimeVarying: vi.fn(async () => false),
@@ -164,12 +196,14 @@ function createPremiereMock(
       findNextKeyframe: vi.fn(async () => undefined),
     }));
     return {
-      getMatchName: vi.fn(async () => "com.moneymoves.rgb-shift"),
+      getMatchName: vi.fn(async () => matchName),
       getParam: vi.fn((index: number) => params[index - 1]),
     };
   }
 
-  const createComponent = vi.fn(() => createComponentForClip());
+  const createComponent = vi.fn((matchName: string) =>
+    createComponentForClip(12, matchName),
+  );
 
   class VideoClipTrackItem {
     private readonly component: ReturnType<typeof createComponentForClip>;
@@ -192,6 +226,8 @@ function createPremiereMock(
     }
 
     getComponentChain = vi.fn(async () => this.chain);
+    getStartTime = vi.fn(async () => ({ ticks: "254016000000" }));
+    getDuration = vi.fn(async () => ({ ticks: "1270080000000" }));
   }
 
   const clips = Array.from(
@@ -214,6 +250,7 @@ function createPremiereMock(
       getTrackItems: vi.fn(async () => clips),
     })),
     getPlayerPosition: vi.fn(async () => ({ ticks: "0" })),
+    getTimebase: vi.fn(async () => "10160640000"),
   };
   const ppro = {
     Project: { getActiveProject: vi.fn(async () => project) },
