@@ -254,6 +254,14 @@ function createPremiereMock(
   };
   const ppro = {
     Project: { getActiveProject: vi.fn(async () => project) },
+    Color: class Color {
+      constructor(
+        public red: number,
+        public green: number,
+        public blue: number,
+        public alpha: number,
+      ) {}
+    },
     VideoClipTrackItem,
     VideoFilterFactory: { createComponent },
   };

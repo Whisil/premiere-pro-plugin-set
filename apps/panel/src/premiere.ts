@@ -164,6 +164,33 @@ function valuesMatch(
   return values.every((value) => value === values[0]);
 }
 
+function colorToHex(value: any): string {
+  if (typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value)) {
+    return value.toUpperCase();
+  }
+  const channel = (name: "red" | "green" | "blue"): number =>
+    Math.round(Math.min(1, Math.max(0, Number(value?.[name] ?? 0))) * 255);
+  return `#${[channel("red"), channel("green"), channel("blue")]
+    .map((component) => component.toString(16).padStart(2, "0"))
+    .join("")}`.toUpperCase();
+}
+
+function valueForHost(
+  ppro: any,
+  parameter: EffectParameterDefinition,
+  value: string | number | boolean,
+): any {
+  if (parameter.type !== "color" || typeof value !== "string") return value;
+  const match = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(value);
+  if (!match) throw new Error(`Invalid color value for ${parameter.label}.`);
+  return new ppro.Color(
+    Number.parseInt(match[1]!, 16) / 255,
+    Number.parseInt(match[2]!, 16) / 255,
+    Number.parseInt(match[3]!, 16) / 255,
+    1,
+  );
+}
+
 function runTransaction(project: any, label: string, actions: any[]): void {
   let success = false;
   project.lockedAccess(() => {
@@ -189,6 +216,7 @@ function resolvePresetValue(
 }
 
 async function createSetValueActions(
+  ppro: any,
   components: any[],
   definition: EffectDefinition,
   parameters: Record<string, string | number | boolean>,
@@ -202,7 +230,11 @@ async function createSetValueActions(
       if (!parameter) continue;
       const param = component.getParam(parameter.index);
       const keyframe = param.createKeyframe(
-        resolvePresetValue(definition, key, rawValue),
+        valueForHost(
+          ppro,
+          parameter,
+          resolvePresetValue(definition, key, rawValue),
+        ),
       );
       actions.push(param.createSetValueAction(keyframe, true));
     }
@@ -285,6 +317,8 @@ export async function inspectEffectSelection(
       const values = await Promise.all(
         params.map((param) => param.getValueAtTime(playhead)),
       );
+      const normalizedValues =
+        definitionParameter.type === "color" ? values.map(colorToHex) : values;
       const timeVarying = await Promise.all(
         params.map((param) => param.isTimeVarying()),
       );
@@ -296,8 +330,8 @@ export async function inspectEffectSelection(
       );
       return {
         key: definitionParameter.key,
-        value: valuesMatch(values) ? values[0] : undefined,
-        mixed: !valuesMatch(values),
+        value: valuesMatch(normalizedValues) ? normalizedValues[0] : undefined,
+        mixed: !valuesMatch(normalizedValues),
         timeVarying: timeVarying.some(Boolean),
         keyframeCount: Math.max(0, ...keyframeCounts),
       };
@@ -361,6 +395,7 @@ export async function applyEffectPreset(preset: EffectPreset): Promise<number> {
       chain.createAppendComponentAction(component),
     );
   const parameterActions = await createSetValueActions(
+    ppro,
     prepared.map(({ component }) => component),
     definition,
     preset.parameters,
@@ -414,7 +449,9 @@ export async function setEffectParameters(
       );
       if (!parameter) continue;
       const param = component.getParam(parameter.index);
-      const keyframe = param.createKeyframe(value);
+      const keyframe = param.createKeyframe(
+        valueForHost(ppro, parameter, value),
+      );
       if (parameter.keyframeable && (await param.isTimeVarying())) {
         actions.push(param.createAddKeyframeAction(keyframe));
       } else {
