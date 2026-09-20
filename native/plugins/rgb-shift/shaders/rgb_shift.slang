@@ -8,14 +8,43 @@ struct RgbShiftParams
     float green_scale;
     float blue_scale;
     float mix_amount;
+    uint edge_behavior;
     float _pad0;
-    float _pad1;
 };
 
-float4 load_clamped(TextureView source, int2 pixel, uint2 size)
+int wrap_coordinate(int coordinate, int size)
 {
-    int2 last = int2(size) - int2(1, 1);
-    return source.Load(uint2(clamp(pixel, int2(0, 0), last)), 0u);
+    int value = coordinate % size;
+    return value < 0 ? value + size : value;
+}
+
+int mirror_coordinate(int coordinate, int size)
+{
+    if (size <= 1)
+        return 0;
+    int period = 2 * (size - 1);
+    int value = wrap_coordinate(coordinate, period);
+    return value < size ? value : period - value;
+}
+
+int2 map_edge(int2 pixel, uint2 size, uint behavior)
+{
+    int2 dimensions = int2(size);
+    // prgpu normalizes Adobe's 1-based popup values to 0-based indices.
+    if (behavior == 1u)
+        return int2(
+            mirror_coordinate(pixel.x, dimensions.x),
+            mirror_coordinate(pixel.y, dimensions.y));
+    if (behavior == 2u)
+        return int2(
+            wrap_coordinate(pixel.x, dimensions.x),
+            wrap_coordinate(pixel.y, dimensions.y));
+    return clamp(pixel, int2(0, 0), dimensions - int2(1, 1));
+}
+
+float4 load_with_edge(TextureView source, int2 pixel, uint2 size, uint behavior)
+{
+    return source.Load(uint2(map_edge(pixel, size, behavior)), 0u);
 }
 
 [shader("compute")]
@@ -40,9 +69,9 @@ void rgb_shift(
     int2 pixel = int2(thread_id.xy);
 
     float4 original = source.Load(thread_id.xy, 0u);
-    float4 red = load_clamped(source, int2(round(float2(pixel) + offset * params.red_scale)), size);
-    float4 green = load_clamped(source, int2(round(float2(pixel) + offset * params.green_scale)), size);
-    float4 blue = load_clamped(source, int2(round(float2(pixel) + offset * params.blue_scale)), size);
+    float4 red = load_with_edge(source, int2(round(float2(pixel) + offset * params.red_scale)), size, params.edge_behavior);
+    float4 green = load_with_edge(source, int2(round(float2(pixel) + offset * params.green_scale)), size, params.edge_behavior);
+    float4 blue = load_with_edge(source, int2(round(float2(pixel) + offset * params.blue_scale)), size, params.edge_behavior);
     float3 shifted = float3(red.r, green.g, blue.b);
 
     output.Store(

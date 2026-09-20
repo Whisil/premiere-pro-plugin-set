@@ -22,6 +22,8 @@ prgpu::params! {
         BlueOffset,
         #[slider(label = "Mix", range = 0..=1, default = 1, percent, precision = 1)]
         Mix,
+        #[popup(label = "Edges", options = ["Clamp", "Mirror", "Wrap"], default = 1)]
+        EdgeBehavior,
     }
 }
 
@@ -33,6 +35,7 @@ prgpu::kernel! {
         green_scale: f32 = GreenOffset,
         blue_scale: f32 = BlueOffset,
         mix_amount: f32 = Mix,
+        edge_behavior: u32 = EdgeBehavior,
     }
 }
 

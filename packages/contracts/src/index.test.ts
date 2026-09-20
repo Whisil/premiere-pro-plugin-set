@@ -58,8 +58,9 @@ describe("shared contracts", () => {
     const rgbShift = getEffectDefinition("com.moneymoves.rgb-shift");
     expect(rgbShift?.status).toBe("available");
     expect(rgbShift?.parameters.map((parameter) => parameter.index)).toEqual([
-      1, 2, 3, 4, 5, 6,
+      1, 2, 3, 4, 5, 6, 7,
     ]);
+    expect(rgbShift?.presets).toHaveLength(3);
     expect(EFFECT_REGISTRY).toHaveLength(15);
   });
 

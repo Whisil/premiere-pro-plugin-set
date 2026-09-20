@@ -180,7 +180,7 @@ function createPremiereMock(
     const values =
       matchName === "com.moneymoves.frame-gate"
         ? [3, 5, 21, 5, 21, 0, 30, 300]
-        : [amount, 0, 1, 0, -1, 1];
+        : [amount, 0, 1, 0, -1, 1, 1];
     const params = values.map((value) => ({
       getValueAtTime: vi.fn(async () => value),
       isTimeVarying: vi.fn(async () => false),
