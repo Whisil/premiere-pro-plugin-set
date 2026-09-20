@@ -24,13 +24,33 @@ test -f "$dist_dir/manifest.json"
 test -f "$dist_dir/index.html"
 test -d "$dist_dir/assets"
 
-if rg -q 'type="module"|crossorigin' "$dist_dir/index.html"; then
+html_file="$dist_dir/index.html"
+grep_bin="/usr/bin/grep"
+
+if "$grep_bin" -Eq 'type="module"|crossorigin' "$html_file"; then
   echo "Panel package is not UXP-compatible: index.html contains module-only attributes." >&2
   exit 1
 fi
 
-if ! rg -q '<script src="\./assets/index\.js"></script>' "$dist_dir/index.html"; then
+if ! "$grep_bin" -Fq "entrypoints.setup" "$html_file"; then
+  echo "Panel package is not UXP-compatible: inline entrypoints bootstrap is missing." >&2
+  exit 1
+fi
+
+if ! "$grep_bin" -Fq '<script src="./assets/index.js"></script>' "$html_file"; then
   echo "Panel package is not UXP-compatible: classic script tag is missing." >&2
+  exit 1
+fi
+
+root_line="$("$grep_bin" -n 'id="root"' "$html_file" | /usr/bin/head -n1 | /usr/bin/cut -d: -f1)"
+setup_line="$("$grep_bin" -n 'entrypoints.setup' "$html_file" | /usr/bin/head -n1 | /usr/bin/cut -d: -f1)"
+script_line="$("$grep_bin" -n '<script src="./assets/index.js"></script>' "$html_file" | /usr/bin/head -n1 | /usr/bin/cut -d: -f1)"
+if [[ -z "$root_line" || -z "$setup_line" || -z "$script_line" ]]; then
+  echo "Panel package is not UXP-compatible: bootstrap must wrap #root." >&2
+  exit 1
+fi
+if [[ "$setup_line" -le "$root_line" || "$script_line" -le "$setup_line" ]]; then
+  echo "Panel package is not UXP-compatible: bootstrap then bundle must load after #root." >&2
   exit 1
 fi
 
@@ -44,7 +64,8 @@ rm -f "$artifact" "$checksum"
 )
 
 /usr/bin/unzip -tq "$artifact"
-if ! /usr/bin/unzip -Z1 "$artifact" | /usr/bin/grep -qx 'manifest.json'; then
+archive_entries="$(/usr/bin/unzip -Z1 "$artifact")"
+if ! /usr/bin/grep -qx 'manifest.json' <<< "$archive_entries"; then
   echo "Invalid CCX layout: manifest.json must be at the archive root." >&2
   exit 1
 fi

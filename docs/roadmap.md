@@ -23,9 +23,9 @@ display while it remains connected to the active Premiere project. Every
 editor-facing feature is complete only when it has a usable panel workflow:
 apply/remove, controls, presets where applicable, errors, and diagnostics.
 
-The panel is organized into **Home**, **Effects**, **Generate**, and
-**Diagnostics** views. Native Effect Controls remains an interoperability and
-advanced-curve fallback, but normal MoneyMoves work must not require it.
+The panel lists installed effects for the current timeline selection: apply,
+remove, and edit sliders while an effect is on the clip. Native Effect Controls
+remains an interoperability and advanced-curve fallback.
 Build, signing, installation, and automated-test commands remain developer
 tooling outside Premiere.
 

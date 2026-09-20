@@ -27,12 +27,11 @@ Premiere renderer --> MoneyMoves native effect --> Premiere GPU suite --> Metal
 
 Only the UXP panel mutates a Premiere project. The renderer cannot reach the project and accepts no arbitrary command, path, URL, or shader input. Output names are constrained by the shared schema and all output is rooted under the configured generated-media directory.
 
-The panel is the primary MoneyMoves workspace. It presents Home, Effects,
-Generate, and Diagnostics views in one resizable panel, including selection
-state, effect controls, presets, palettes, keyframes, generator jobs, and
-health information. Native effects remain the project and renderer source of
-truth; Premiere's Effect Controls stays available for interoperability and
-advanced curve editing only.
+The panel is the clip apply/remove surface. Select video clips in Premiere,
+click an installed MoneyMoves effect to apply it, remove it to revert, and
+edit sliders only while it is on the selection. Native effects remain the
+project source of truth; Premiere's Effect Controls stays available for
+keyframes and advanced curve editing.
 
 ## Stable interfaces
 

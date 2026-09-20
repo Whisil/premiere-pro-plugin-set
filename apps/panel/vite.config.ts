@@ -1,16 +1,15 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+import { toUxpClassicHtml } from "./uxp-html";
 
 export default defineConfig({
   plugins: [
     react(),
     {
       name: "uxp-classic-script-tag",
+      apply: "build",
       enforce: "post",
-      transformIndexHtml(html) {
-        // UXP executes plain bundled scripts, not browser module scripts.
-        return html.replace(/ type="module"/g, "").replace(/ crossorigin/g, "");
-      },
+      transformIndexHtml: toUxpClassicHtml,
     },
   ],
   base: "./",

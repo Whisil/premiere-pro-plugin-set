@@ -2,11 +2,36 @@
 
 This guide targets Premiere Pro 25.6.4 on Apple Silicon.
 
+Set this path once; the commands below reuse it:
+
+```sh
+UPIA="/Library/Application Support/Adobe/Adobe Desktop Common/RemoteComponents/UPI/UnifiedPluginInstallerAgent/UnifiedPluginInstallerAgent.app/Contents/macOS/UnifiedPluginInstallerAgent"
+```
+
+## Replace a blank panel
+
+Premiere keeps a leftover copy until it is removed. Quit Premiere and UXP
+Developer Tool, then from the repository root:
+
+```sh
+pnpm reinstall:panel
+```
+
+That command packages and verifies the current `.ccx`, preserves prior panel
+copies and UXP storage under `artifacts/install-backups`, installs the verified
+files, and updates Premiere's UXP registry. It does not require Creative Cloud
+Desktop or UXP Developer Tool. It requests the macOS administrator password
+because Adobe's production UXP folders are system-owned.
+
+The command refuses to run while Premiere or UXP Developer Tool is open. This
+protects unsaved projects and prevents either application from restoring stale
+plugin state during installation.
+
 ## Recommended: install the packaged panel without Creative Cloud Desktop
 
 The current panel package is:
 
-`artifacts/releases/MoneyMoves-Toolkit-0.9.0.ccx`
+`artifacts/releases/MoneyMoves-Toolkit-0.9.2.ccx`
 
 1. Quit Premiere Pro.
 2. Open **Terminal**.
@@ -15,22 +40,23 @@ The current panel package is:
    ```sh
    cd "/Users/davidgajdamaka/Desktop/code/moneymoves-plugin-set"
    cd artifacts/releases
-   /usr/bin/shasum -a 256 -c MoneyMoves-Toolkit-0.9.0.ccx.sha256
+   /usr/bin/shasum -a 256 -c MoneyMoves-Toolkit-0.9.2.ccx.sha256
    ```
 
    The result must end with `OK`.
 
-4. Install the `.ccx` through Adobe's Unified Plugin Installer Agent. This is
-   the supported command-line alternative when Creative Cloud Desktop does not
-   open:
+4. Normally, install the `.ccx` through Adobe's Unified Plugin Installer Agent:
 
    ```sh
-   UPIA="/Library/Application Support/Adobe/Adobe Desktop Common/RemoteComponents/UPI/UnifiedPluginInstallerAgent/UnifiedPluginInstallerAgent.app/Contents/macOS/UnifiedPluginInstallerAgent"
-   CCX="/Users/davidgajdamaka/Desktop/code/moneymoves-plugin-set/artifacts/releases/MoneyMoves-Toolkit-0.9.0.ccx"
+   CCX="/Users/davidgajdamaka/Desktop/code/moneymoves-plugin-set/artifacts/releases/MoneyMoves-Toolkit-0.9.2.ccx"
    sudo "$UPIA" --install "$CCX"
    ```
 
    Enter the macOS administrator password when prompted.
+
+   UPIA can return error `-631` when Creative Cloud is signed out or cannot
+   authorize the install. On this development Mac, use `pnpm reinstall:panel`
+   instead while Creative Cloud Desktop is unavailable.
 
 5. Start Premiere Pro, then open **Window → UXP Plugins → MoneyMoves Toolkit**.
    If Premiere was already running during installation, quit and reopen it.
@@ -67,21 +93,26 @@ Use this only for live reload or debugging. It is not a permanent installation.
    { "developer": true }
    ```
 
-3. In UDT, choose **Add Plugin** and select:
+3. Build the panel with `pnpm build:panel`, then in UDT choose **Add Plugin**
+   and select:
 
-   `/Users/davidgajdamaka/Desktop/code/moneymoves-plugin-set/apps/panel`
+   `/Users/davidgajdamaka/Desktop/code/moneymoves-plugin-set/apps/panel/dist/manifest.json`
+
+   Do not add the `apps/panel` source tree. Premiere's UXP runtime cannot
+   execute that module entry, so `#root` stays empty.
 
 4. In the Premiere Pro row, choose **Load** (or **Load & Watch** while coding).
 5. In Premiere, open **Window → UXP Plugins → MoneyMoves Toolkit**.
 
 UDT can load a plugin only while its host application is running. For normal
-editing, use UPIA and close UDT.
+editing, use the packaged/offline install and close UDT.
 
 ## Troubleshooting
 
 - **UXP Plugins is missing:** confirm Premiere is 25.6 or later, then restart it.
-- **The panel is blank:** close any UDT-loaded copy, restart Premiere, and open
-  the installed panel. If it remains blank, inspect UDT's Logs panel.
+- **The panel is blank / `#root` is empty:** quit Premiere, run
+  `pnpm reinstall:panel`, then reopen Premiere. Close any UDT-loaded copy
+  first. If you are debugging, load `apps/panel/dist`, not the source tree.
 - **UPIA cannot be found:** repair Adobe Premiere/Creative Cloud; the executable
   should be at the path shown above.
 - **Effects do not appear:** run the native recipes, restart Premiere, and check

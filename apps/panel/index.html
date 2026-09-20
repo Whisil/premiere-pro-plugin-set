@@ -4,9 +4,87 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MoneyMoves Toolkit</title>
+    <style>
+      html {
+        height: 100%;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        background: #0b0b16;
+        color: #ffcc28;
+      }
+      body {
+        margin: 0;
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        background: #0b0b16;
+        color: #ffcc28;
+      }
+      #root {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: auto;
+        width: 100%;
+      }
+      .hint {
+        margin: 0;
+        padding: 16px;
+        font:
+          16px/1.4 -apple-system,
+          sans-serif;
+        color: #ffcc28;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <p class="hint">Loading MoneyMoves Toolkit…</p>
+    </div>
+    <script>
+      (function () {
+        function hostFrom(arg) {
+          if (arg && arg.node && arg.node.nodeType === 1) return arg.node;
+          if (arg && arg.nodeType === 1) return arg;
+          return document.body;
+        }
+
+        function ensureRoot(host) {
+          var root = document.getElementById("root");
+          if (!root) {
+            root = document.createElement("div");
+            root.id = "root";
+            root.innerHTML = '<p class="hint">Loading MoneyMoves Toolkit…</p>';
+          }
+          if (host && host !== root && root.parentNode !== host) {
+            host.appendChild(root);
+          }
+          return root;
+        }
+
+        function mount(arg) {
+          var root = ensureRoot(hostFrom(arg));
+          window.__moneymovesPanelRoot = root;
+          if (typeof window.__moneymovesMount === "function") {
+            window.__moneymovesMount(root);
+          }
+        }
+
+        try {
+          require("uxp").entrypoints.setup({
+            panels: {
+              moneymovesPanel: {
+                create: mount,
+                show: mount,
+              },
+            },
+          });
+        } catch (err) {}
+
+        mount();
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

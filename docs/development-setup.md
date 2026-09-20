@@ -38,11 +38,10 @@ The Vite build emits a single classic IIFE script for UXP. Do not point UDT at
 the source tree or a browser-development URL; Premiere's UXP runtime expects
 the built plain script bundle.
 
-The panel's **Home**, **Effects**, **Generate**, and **Diagnostics** views are
-the normal editor workflow. Diagnostics must list the native bundle before an
-effect is enabled; use Effects to apply, remove, adjust, and keyframe a
-MoneyMoves effect on the selected video clips. Browser preview is useful for
-layout but cannot exercise Premiere APIs.
+The panel is a clip-driven apply / remove / slider surface for installed
+MoneyMoves effects. Native Effect Controls remains available for keyframes
+and advanced curves. Browser preview is useful for layout but cannot exercise
+Premiere APIs.
 
 ## Renderer LaunchAgent
 

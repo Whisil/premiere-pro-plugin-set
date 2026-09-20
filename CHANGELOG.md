@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.9.2 - Unreleased
+
+- Replace the four-tab panel with a clip-driven apply / remove / slider
+  surface for installed MoneyMoves effects.
+- Render the panel into Premiere's `create`/`show` root instead of a homemade
+  `uxp-panel`, and keep only the Toolkit panel in the UXP Plugins menu.
+- Add a recoverable `pnpm reinstall:panel` path that verifies the current
+  `.ccx`, backs up existing copies and storage, and installs without Creative
+  Cloud Desktop.
+
+## 0.9.1 - Unreleased
+
+- Fix the production panel bootstrap by loading the classic UXP bundle after
+  the `#root` element and waiting for DOM readiness before mounting React.
+- Reject packaged panels whose script executes before the root element.
+
 ## 0.9.0 - Unreleased
 
 - Add the panel-driven Bloom CPU/Metal effect with threshold, soft knee,

@@ -1,77 +1,41 @@
 import {
   EFFECT_REGISTRY,
-  FRAME_GATE_PRESETS,
-  SCHEMA_VERSION,
-  brandTokens,
-  type AsciiTitleJobRequest,
   type EffectDefinition,
   type EffectParameterDefinition,
-  type MapJobRequest,
-  type RenderJob,
 } from "@moneymoves/contracts";
 import { useEffect, useMemo, useState } from "react";
 import {
   applyEffect,
   applyEffectPreset,
-  chooseAndInsertMogrt,
-  getActiveSequenceFormat,
   getInstalledMoneyMovesEffects,
   getSelectionSummary,
-  hostDiagnostics,
-  importGeneratedFile,
   inspectEffectSelection,
-  navigateKeyframe,
   removeEffect,
   setEffectParameter,
-  setEffectParameters,
-  setKeyframeInterpolation,
-  setParameterTimeVarying,
   subscribeToSelectionChanges,
-  toggleKeyframeAtPlayhead,
   type EffectParameterState,
   type EffectSelectionState,
   type SelectionSummary,
 } from "./premiere.js";
-import {
-  cancelRenderJob,
-  getRendererToken,
-  rendererHealth,
-  setRendererToken,
-  submitRenderJob,
-  waitForRenderJob,
-} from "./renderer.js";
 
 type Notice = { tone: "info" | "success" | "error"; message: string };
-type PanelView = "home" | "effects" | "generate" | "diagnostics";
 
-const PANEL_VIEW_KEY = "moneymoves.panel.view";
 const PANEL_EFFECT_KEY = "moneymoves.panel.effect";
-const PANEL_PALETTE_KEY = "moneymoves.panel.palette";
 
-function storedValue<T extends string>(key: string, fallback: T): T {
+function storedEffectMatchName(): string {
   try {
-    return (localStorage.getItem(key) as T | null) ?? fallback;
+    return localStorage.getItem(PANEL_EFFECT_KEY) ?? "com.moneymoves.rgb-shift";
   } catch {
-    return fallback;
+    return "com.moneymoves.rgb-shift";
   }
 }
 
-function persistValue(key: string, value: string): void {
+function persistEffectMatchName(matchName: string): void {
   try {
-    localStorage.setItem(key, value);
+    localStorage.setItem(PANEL_EFFECT_KEY, matchName);
   } catch {
-    // A browser preview or restricted UXP build can still use the panel.
+    // Browser preview or a restricted UXP host can still use the panel.
   }
-}
-
-function stateLabel(state: EffectSelectionState | undefined): string {
-  if (!state || state.selectedClips === 0) return "Select video clips";
-  if (state.state === "all")
-    return `On all ${state.selectedClips} selected clips`;
-  if (state.state === "some") {
-    return `On ${state.appliedClips} of ${state.selectedClips} selected clips`;
-  }
-  return "Not applied";
 }
 
 function parameterState(
@@ -88,64 +52,83 @@ function displayValue(
   return state?.value ?? parameter.defaultValue;
 }
 
+function bitCount(
+  definition: EffectDefinition,
+  parameter: EffectParameterDefinition,
+  state: EffectSelectionState | undefined,
+): number {
+  const fallback = Number(
+    definition.parameters.find(
+      (candidate) => candidate.key === parameter.bitCountParameter,
+    )?.defaultValue ?? 5,
+  );
+  const lengthParameter = definition.parameters.find(
+    (candidate) => candidate.key === parameter.bitCountParameter,
+  );
+  const counted = lengthParameter
+    ? parameterState(state, lengthParameter)
+    : undefined;
+  return Math.max(1, Math.min(12, Number(counted?.value ?? fallback)));
+}
+
+function selectionCopy(selection: SelectionSummary | undefined): string {
+  if (!selection || selection.videoClips === 0) return "Select a video clip";
+  if (selection.videoClips === 1) return "1 clip selected";
+  return `${selection.videoClips} clips selected`;
+}
+
+function appliedCopy(state: EffectSelectionState | undefined): string {
+  if (!state || state.selectedClips === 0 || state.state === "none") {
+    return "Off";
+  }
+  if (state.state === "all") return "On";
+  return `On ${state.appliedClips}/${state.selectedClips}`;
+}
+
 interface EffectParameterControlProps {
   definition: EffectDefinition;
   parameter: EffectParameterDefinition;
-  state: EffectParameterState | undefined;
+  effectState: EffectSelectionState | undefined;
   disabled: boolean;
   onSetValue: (
     parameter: EffectParameterDefinition,
     value: string | number | boolean,
-  ) => void;
-  onSetTimeVarying: (
-    parameter: EffectParameterDefinition,
-    enabled: boolean,
-  ) => void;
-  onToggleKeyframe: (parameter: EffectParameterDefinition) => void;
-  onNavigateKeyframe: (
-    parameter: EffectParameterDefinition,
-    direction: "previous" | "next",
-  ) => void;
-  onSetInterpolation: (
-    parameter: EffectParameterDefinition,
-    interpolation: number,
   ) => void;
 }
 
 function EffectParameterControl({
   definition,
   parameter,
-  state,
+  effectState,
   disabled,
   onSetValue,
-  onSetTimeVarying,
-  onToggleKeyframe,
-  onNavigateKeyframe,
-  onSetInterpolation,
 }: EffectParameterControlProps) {
+  const state = parameterState(effectState, parameter);
   const value = displayValue(parameter, state);
   const mixed = state?.mixed ?? false;
   const controlDisabled = disabled || !state;
 
   function toggleBit(index: number): void {
-    const current = Number(value);
-    onSetValue(parameter, current ^ (1 << index));
+    onSetValue(parameter, Number(value) ^ (1 << index));
   }
 
   return (
-    <div className="parameter-control">
-      <div className="parameter-heading">
-        <label htmlFor={`${definition.id}-${parameter.key}`}>
-          {parameter.label}
-        </label>
-        {mixed && <span className="mixed">Mixed</span>}
-      </div>
+    <label className="parameter">
+      <span className="parameter-label">
+        {parameter.label}
+        {mixed ? <span className="mixed">Mixed</span> : null}
+      </span>
 
       {parameter.type === "select" && (
         <select
-          id={`${definition.id}-${parameter.key}`}
           disabled={controlDisabled}
-          value={mixed ? "" : String(value)}
+          value={
+            mixed
+              ? ""
+              : (parameter.options?.find(
+                  (candidate) => candidate.value === value,
+                )?.id ?? String(value))
+          }
           onChange={(event) => {
             const option = parameter.options?.find(
               (candidate) => candidate.id === event.target.value,
@@ -163,21 +146,16 @@ function EffectParameterControl({
       )}
 
       {parameter.type === "boolean" && (
-        <label className="check compact">
-          <input
-            id={`${definition.id}-${parameter.key}`}
-            type="checkbox"
-            disabled={controlDisabled}
-            checked={Boolean(value)}
-            onChange={(event) => onSetValue(parameter, event.target.checked)}
-          />
-          Enabled
-        </label>
+        <input
+          type="checkbox"
+          disabled={controlDisabled}
+          checked={Boolean(value)}
+          onChange={(event) => onSetValue(parameter, event.target.checked)}
+        />
       )}
 
       {parameter.type === "color" && (
         <input
-          id={`${definition.id}-${parameter.key}`}
           type="color"
           disabled={controlDisabled}
           value={mixed ? "#000000" : String(value)}
@@ -186,9 +164,8 @@ function EffectParameterControl({
       )}
 
       {parameter.type === "number" && (
-        <div className="number-control">
+        <span className="number-control">
           <input
-            id={`${definition.id}-${parameter.key}`}
             type="range"
             disabled={controlDisabled}
             min={parameter.min}
@@ -200,7 +177,6 @@ function EffectParameterControl({
             }
           />
           <input
-            aria-label={`${parameter.label} value`}
             type="number"
             disabled={controlDisabled}
             min={parameter.min}
@@ -212,27 +188,16 @@ function EffectParameterControl({
               onSetValue(parameter, Number(event.target.value))
             }
           />
-          {parameter.unit && <span className="unit">{parameter.unit}</span>}
-        </div>
+          {parameter.unit ? (
+            <span className="unit">{parameter.unit}</span>
+          ) : null}
+        </span>
       )}
 
       {parameter.type === "bitmask" && (
-        <div className="pattern-control" aria-label={parameter.label}>
+        <span className="pattern-control">
           {Array.from(
-            {
-              length: Math.max(
-                1,
-                Math.min(
-                  12,
-                  Number(
-                    definition.parameters.find(
-                      (candidate) =>
-                        candidate.key === parameter.bitCountParameter,
-                    )?.defaultValue ?? 5,
-                  ),
-                ),
-              ),
-            },
+            { length: bitCount(definition, parameter, effectState) },
             (_, index) => {
               const visible = (Number(value) & (1 << index)) !== 0;
               return (
@@ -241,7 +206,6 @@ function EffectParameterControl({
                   disabled={controlDisabled}
                   key={index}
                   onClick={() => toggleBit(index)}
-                  title={`Frame ${index + 1}: ${visible ? "visible" : "transparent"}`}
                   type="button"
                 >
                   {index + 1}
@@ -249,155 +213,100 @@ function EffectParameterControl({
               );
             },
           )}
-        </div>
+        </span>
       )}
-
-      {parameter.keyframeable && (
-        <div className="keyframe-controls">
-          <label className="check compact">
-            <input
-              type="checkbox"
-              disabled={controlDisabled}
-              checked={state?.timeVarying ?? false}
-              onChange={(event) =>
-                onSetTimeVarying(parameter, event.target.checked)
-              }
-            />
-            Animate
-          </label>
-          <button
-            className="quiet"
-            disabled={controlDisabled || !state?.timeVarying}
-            onClick={() => onToggleKeyframe(parameter)}
-            type="button"
-          >
-            Key
-          </button>
-          <button
-            aria-label={`Previous ${parameter.label} keyframe`}
-            className="quiet icon-button"
-            disabled={controlDisabled || !state?.keyframeCount}
-            onClick={() => onNavigateKeyframe(parameter, "previous")}
-            type="button"
-          >
-            ‹
-          </button>
-          <button
-            aria-label={`Next ${parameter.label} keyframe`}
-            className="quiet icon-button"
-            disabled={controlDisabled || !state?.keyframeCount}
-            onClick={() => onNavigateKeyframe(parameter, "next")}
-            type="button"
-          >
-            ›
-          </button>
-          <select
-            aria-label={`${parameter.label} interpolation`}
-            disabled={controlDisabled || !state?.keyframeCount}
-            defaultValue="0"
-            onChange={(event) =>
-              onSetInterpolation(parameter, Number(event.target.value))
-            }
-          >
-            <option value="0">Linear</option>
-            <option value="1">Hold</option>
-          </select>
-        </div>
-      )}
-    </div>
+    </label>
   );
 }
 
 export function App() {
   const [notice, setNotice] = useState<Notice>({
     tone: "info",
-    message: "Ready.",
+    message: "",
   });
   const [busy, setBusy] = useState(false);
-  const [view, setView] = useState<PanelView>(() =>
-    storedValue<PanelView>(PANEL_VIEW_KEY, "home"),
+  const [selectedMatchName, setSelectedMatchName] = useState(
+    storedEffectMatchName,
   );
-  const [search, setSearch] = useState("");
-  const [selectedEffectMatchName, setSelectedEffectMatchName] =
-    useState<string>(() =>
-      storedValue(PANEL_EFFECT_KEY, "com.moneymoves.rgb-shift"),
-    );
-  const [rendererOnline, setRendererOnline] = useState(false);
-  const [jobs, setJobs] = useState<RenderJob[]>([]);
-  const [country, setCountry] = useState("USA");
-  const [asciiText, setAsciiText] = useState("MONEY MOVES");
-  const [asciiFont, setAsciiFont] =
-    useState<AsciiTitleJobRequest["font"]>("Standard");
-  const [asciiAnimation, setAsciiAnimation] =
-    useState<AsciiTitleJobRequest["animation"]>("reveal");
-  const [mapAnimation, setMapAnimation] =
-    useState<MapJobRequest["animation"]>("fly-to");
-  const [labels, setLabels] = useState(true);
-  const [width, setWidth] = useState(3840);
-  const [height, setHeight] = useState(2160);
-  const [fps, setFps] = useState(30);
-  const [sequenceName, setSequenceName] = useState("Manual settings");
-  const [paletteId, setPaletteId] = useState<string>(() =>
-    storedValue(PANEL_PALETTE_KEY, "moneymoves-core"),
-  );
-  const [token, setToken] = useState(getRendererToken());
-  const [diagnostics, setDiagnostics] = useState<Record<string, string>>({});
-  const [installedEffectMatchNames, setInstalledEffectMatchNames] = useState<
-    string[]
-  >([]);
+  const [installedMatchNames, setInstalledMatchNames] = useState<string[]>([]);
   const [selection, setSelection] = useState<SelectionSummary>();
-  const [effectState, setEffectState] = useState<EffectSelectionState>();
+  const [effectStates, setEffectStates] = useState<
+    Record<string, EffectSelectionState>
+  >({});
 
+  const installedEffects = useMemo(() => {
+    const available = EFFECT_REGISTRY.filter(
+      (effect) => effect.status === "available",
+    );
+    if (installedMatchNames.length === 0) return available;
+    const detected = available.filter((effect) =>
+      installedMatchNames.includes(effect.matchName),
+    );
+    return detected.length > 0 ? detected : available;
+  }, [installedMatchNames]);
   const selectedEffect =
-    EFFECT_REGISTRY.find(
-      (effect) => effect.matchName === selectedEffectMatchName,
-    ) ?? EFFECT_REGISTRY[1]!;
-  const filteredEffects = useMemo(
-    () =>
-      EFFECT_REGISTRY.filter((effect) =>
-        effect.name.toLowerCase().includes(search.toLowerCase().trim()),
-      ),
-    [search],
-  );
-  const mapCountries = useMemo(
-    () =>
-      country
-        .split(",")
-        .map((code) => code.trim())
-        .filter((code) => /^[A-Z]{3}$/.test(code)),
-    [country],
-  );
-  const selectedEffectInstalled =
-    selectedEffect.status === "available" &&
-    installedEffectMatchNames.includes(selectedEffect.matchName);
+    installedEffects.find((effect) => effect.matchName === selectedMatchName) ??
+    installedEffects[0];
+  const selectedState = selectedEffect
+    ? effectStates[selectedEffect.matchName]
+    : undefined;
+  const selectedIsOn =
+    selectedState?.state === "all" || selectedState?.state === "some";
 
-  useEffect(() => persistValue(PANEL_VIEW_KEY, view), [view]);
-  useEffect(
-    () => persistValue(PANEL_EFFECT_KEY, selectedEffect.matchName),
-    [selectedEffect.matchName],
-  );
-  useEffect(() => persistValue(PANEL_PALETTE_KEY, paletteId), [paletteId]);
+  useEffect(() => {
+    if (selectedEffect) persistEffectMatchName(selectedEffect.matchName);
+  }, [selectedEffect]);
 
   useEffect(() => {
     let cancelled = false;
-    async function refreshSelection(): Promise<void> {
+    async function refresh(): Promise<void> {
       try {
-        const [nextSelection, nextEffectState] = await Promise.all([
-          getSelectionSummary(),
-          inspectEffectSelection(selectedEffect),
+        const [nextSelection, installed] = await Promise.all([
+          getSelectionSummary().catch(() => undefined),
+          getInstalledMoneyMovesEffects().catch((): string[] => []),
         ]);
         if (cancelled) return;
         setSelection(nextSelection);
-        setEffectState(nextEffectState);
+        setInstalledMatchNames(installed);
+        const visible = EFFECT_REGISTRY.filter((effect) => {
+          if (effect.status !== "available") return false;
+          if (installed.length === 0) return true;
+          return installed.includes(effect.matchName);
+        });
+        const listed =
+          visible.length > 0
+            ? visible
+            : EFFECT_REGISTRY.filter((effect) => effect.status === "available");
+        const nextStates = await Promise.all(
+          listed.map(async (effect) => {
+            try {
+              return [
+                effect.matchName,
+                await inspectEffectSelection(effect),
+              ] as const;
+            } catch {
+              return [
+                effect.matchName,
+                {
+                  selectedClips: 0,
+                  appliedClips: 0,
+                  state: "none" as const,
+                  parameters: [],
+                },
+              ] as const;
+            }
+          }),
+        );
+        if (cancelled) return;
+        setEffectStates(Object.fromEntries(nextStates));
       } catch {
         if (cancelled) return;
         setSelection(undefined);
-        setEffectState(undefined);
       }
     }
-    void refreshSelection();
+    void refresh();
     let unsubscribe: () => void = () => undefined;
-    void subscribeToSelectionChanges(() => void refreshSelection()).then(
+    void subscribeToSelectionChanges(() => void refresh()).then(
       (nextUnsubscribe) => {
         if (cancelled) nextUnsubscribe();
         else unsubscribe = nextUnsubscribe;
@@ -407,11 +316,6 @@ export function App() {
       cancelled = true;
       unsubscribe();
     };
-  }, [selectedEffect]);
-
-  useEffect(() => {
-    void refreshDiagnostics();
-    void syncOutputToSequence(true);
   }, []);
 
   async function run(action: () => Promise<void>): Promise<void> {
@@ -428,846 +332,188 @@ export function App() {
     }
   }
 
-  async function refreshDiagnostics(): Promise<void> {
-    const [online, host, installedEffects] = await Promise.all([
-      rendererHealth(),
-      hostDiagnostics(),
-      getInstalledMoneyMovesEffects().catch(() => []),
-    ]);
-    setRendererOnline(online);
-    setDiagnostics(host);
-    setInstalledEffectMatchNames(installedEffects);
-  }
-
-  async function refreshEffectState(): Promise<void> {
-    const [nextSelection, nextEffectState] = await Promise.all([
-      getSelectionSummary(),
-      inspectEffectSelection(selectedEffect),
-    ]);
+  async function refreshStates(): Promise<void> {
+    const nextSelection = await getSelectionSummary();
     setSelection(nextSelection);
-    setEffectState(nextEffectState);
+    const nextStates = await Promise.all(
+      installedEffects.map(async (effect) => {
+        try {
+          return [
+            effect.matchName,
+            await inspectEffectSelection(effect),
+          ] as const;
+        } catch {
+          return [
+            effect.matchName,
+            {
+              selectedClips: 0,
+              appliedClips: 0,
+              state: "none" as const,
+              parameters: [],
+            },
+          ] as const;
+        }
+      }),
+    );
+    setEffectStates(Object.fromEntries(nextStates));
   }
 
-  async function syncOutputToSequence(silent = false): Promise<void> {
-    try {
-      const format = await getActiveSequenceFormat();
-      setWidth(format.width);
-      setHeight(format.height);
-      setFps(format.fps);
-      setSequenceName(format.name);
-      if (!silent) {
-        setNotice({
-          tone: "success",
-          message: `Output matched ${format.name}: ${format.width}×${format.height} at ${format.fps} fps.`,
-        });
-      }
-    } catch (error) {
-      if (!silent) throw error;
+  function applyNamed(effect: EffectDefinition): void {
+    setSelectedMatchName(effect.matchName);
+    if (!selection?.videoClips) {
+      setNotice({ tone: "info", message: "Select a video clip first." });
+      return;
     }
-  }
-
-  async function renderAndImport(
-    request: MapJobRequest | AsciiTitleJobRequest,
-  ): Promise<void> {
-    const created = await submitRenderJob(request);
-    setJobs((current) => [
-      created,
-      ...current.filter((job) => job.id !== created.id),
-    ]);
-    const completed = await waitForRenderJob(created, (updated) => {
-      setJobs((current) => [
-        updated,
-        ...current.filter((job) => job.id !== updated.id),
-      ]);
-    });
-    if (!completed.outputPath) {
-      throw new Error("Renderer completed without an output path.");
-    }
-    await importGeneratedFile(completed.outputPath);
-    setNotice({
-      tone: "success",
-      message: `Rendered and imported ${completed.outputPath}`,
+    void run(async () => {
+      const count = await applyEffect(effect.matchName, effect.name);
+      await refreshStates();
+      setNotice({
+        tone: "success",
+        message: `${effect.name} on ${count} clip${count === 1 ? "" : "s"}.`,
+      });
     });
   }
 
-  function selectEffect(effect: EffectDefinition): void {
-    setSelectedEffectMatchName(effect.matchName);
-    setView("effects");
+  function chooseEffect(effect: EffectDefinition): void {
+    const state = effectStates[effect.matchName];
+    if (state?.state === "all" || state?.state === "some") {
+      setSelectedMatchName(effect.matchName);
+      return;
+    }
+    applyNamed(effect);
   }
 
-  function renderHome(): JSX.Element {
-    const frameGate = EFFECT_REGISTRY.find(
-      (effect) => effect.id === "frame-gate",
-    )!;
-    const rgbShift = EFFECT_REGISTRY.find(
-      (effect) => effect.id === "rgb-shift",
-    )!;
-    const rgbShiftInstalled = installedEffectMatchNames.includes(
-      rgbShift.matchName,
-    );
-    const frameGateInstalled = installedEffectMatchNames.includes(
-      frameGate.matchName,
-    );
-    return (
-      <>
-        <section className="context-card">
-          <div>
-            <p className="eyebrow">ACTIVE CONTEXT</p>
-            <h2>{diagnostics.sequence ?? "No active sequence"}</h2>
-          </div>
-          <p className="hint">
-            {selection
-              ? `${selection.videoClips} video clip(s), ${selection.nonVideoItems} other item(s) selected.`
-              : "Open a project and select video clips to begin."}
-          </p>
-          <div className="actions">
-            <button
-              className="quiet"
-              onClick={() => void run(refreshEffectState)}
-            >
-              Refresh selection
-            </button>
-            <button className="quiet" onClick={() => setView("effects")}>
-              Open Effects
-            </button>
-          </div>
-        </section>
-
-        <section>
-          <div className="section-heading">
-            <div>
-              <h2>Quick Actions</h2>
-              <p className="hint">
-                Apply a reversible frame throttle without changing linked audio.
-              </p>
-            </div>
-            <span
-              className={
-                frameGateInstalled ? "status available" : "status planned"
-              }
-            >
-              {frameGateInstalled ? "Installed" : "Missing bundle"}
-            </span>
-          </div>
-          <div className="button-grid">
-            {FRAME_GATE_PRESETS.map((preset) => (
-              <button
-                className="quiet"
-                disabled={busy || !frameGateInstalled || !selection?.videoClips}
-                key={preset.id}
-                onClick={() =>
-                  void run(async () => {
-                    const count = await applyEffectPreset(preset);
-                    await refreshEffectState();
-                    setNotice({
-                      tone: "success",
-                      message: `${preset.name} applied to ${count} clip(s).`,
-                    });
-                  })
-                }
-                title={
-                  frameGateInstalled
-                    ? `Apply ${preset.name} to selected video clips.`
-                    : `${frameGate.name} native bundle is not installed.`
-                }
-              >
-                {preset.name}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section>
-          <div className="section-heading">
-            <div>
-              <h2>Ready now</h2>
-              <p className="hint">
-                RGB Shift is the current host-validation effect.
-              </p>
-            </div>
-            <span
-              className={
-                rgbShiftInstalled ? "status available" : "status planned"
-              }
-            >
-              {rgbShiftInstalled ? "Installed" : "Missing bundle"}
-            </span>
-          </div>
-          <button onClick={() => selectEffect(rgbShift)}>Open RGB Shift</button>
-        </section>
-
-        <section className="health-card">
-          <div>
-            <h2>Renderer</h2>
-            <p className="hint">
-              {rendererOnline
-                ? "Local map and ASCII renderer is online."
-                : "Renderer is offline. Check Diagnostics before generating media."}
-            </p>
-          </div>
-          <button className="quiet" onClick={() => setView("generate")}>
-            Generate media
-          </button>
-        </section>
-      </>
-    );
-  }
-
-  function renderEffects(): JSX.Element {
-    const controlsDisabled = busy || !selectedEffectInstalled;
-    return (
-      <div className="effects-layout">
-        <section className="effect-browser">
-          <div className="section-heading">
-            <div>
-              <h2>Effects</h2>
-              <p className="hint">
-                Installed effects are immediately usable; later effects stay
-                visible.
-              </p>
-            </div>
-          </div>
-          <input
-            className="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search MoneyMoves effects"
-          />
-          <div className="effect-list">
-            {filteredEffects.map((effect) => (
-              <button
-                className={
-                  effect.matchName === selectedEffect.matchName
-                    ? "effect-row selected"
-                    : "effect-row"
-                }
-                key={effect.matchName}
-                onClick={() => selectEffect(effect)}
-                type="button"
-              >
-                <span>{effect.name}</span>
-                <span
-                  className={
-                    effect.status === "planned"
-                      ? "status planned"
-                      : installedEffectMatchNames.includes(effect.matchName)
-                        ? "status available"
-                        : "status planned"
-                  }
-                >
-                  {effect.status === "planned"
-                    ? "Planned"
-                    : installedEffectMatchNames.includes(effect.matchName)
-                      ? "Installed"
-                      : "Missing"}
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="effect-inspector">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">{selectedEffect.category}</p>
-              <h2>{selectedEffect.name}</h2>
-              <p className="hint">{selectedEffect.description}</p>
-            </div>
-            <span
-              className={
-                selectedEffect.status === "planned"
-                  ? "status planned"
-                  : selectedEffectInstalled
-                    ? "status available"
-                    : "status planned"
-              }
-            >
-              {selectedEffect.status === "planned"
-                ? "Planned"
-                : selectedEffectInstalled
-                  ? "Installed"
-                  : "Missing bundle"}
-            </span>
-          </div>
-
-          {selectedEffect.status !== "available" ? (
-            <p className="empty-state">
-              This effect’s panel contract is reserved, but its native bundle is
-              not installed yet. It will become actionable in its roadmap phase.
-            </p>
-          ) : !selectedEffectInstalled ? (
-            <p className="empty-state">
-              This effect is implemented but its native bundle was not detected.
-              Install or restart Premiere, then use Diagnostics to refresh host
-              health.
-            </p>
-          ) : (
-            <>
-              <p className="selection-state">{stateLabel(effectState)}</p>
-              <div className="actions inspector-actions">
-                <button
-                  disabled={busy || !selection?.videoClips}
-                  onClick={() =>
-                    void run(async () => {
-                      const count = await applyEffect(
-                        selectedEffect.matchName,
-                        selectedEffect.name,
-                      );
-                      await refreshEffectState();
-                      setNotice({
-                        tone: "success",
-                        message: `${selectedEffect.name} is ready on ${count} selected clip(s).`,
-                      });
-                    })
-                  }
-                >
-                  {effectState?.state === "some" ? "Add to missing" : "Apply"}
-                </button>
-                <button
-                  className="quiet"
-                  disabled={busy || effectState?.state === "none"}
-                  onClick={() =>
-                    void run(async () => {
-                      const count = await removeEffect(
-                        selectedEffect.matchName,
-                        selectedEffect.name,
-                      );
-                      await refreshEffectState();
-                      setNotice({
-                        tone: "success",
-                        message: `${selectedEffect.name} removed from ${count} clip(s).`,
-                      });
-                    })
-                  }
-                >
-                  Remove
-                </button>
-                <button
-                  className="quiet"
-                  disabled={controlsDisabled || effectState?.state === "none"}
-                  onClick={() =>
-                    void run(async () => {
-                      const values = Object.fromEntries(
-                        selectedEffect.parameters.map((parameter) => [
-                          parameter.key,
-                          parameter.defaultValue,
-                        ]),
-                      );
-                      await setEffectParameters(selectedEffect, values);
-                      await refreshEffectState();
-                      setNotice({
-                        tone: "success",
-                        message: `${selectedEffect.name} reset.`,
-                      });
-                    })
-                  }
-                >
-                  Reset
-                </button>
-              </div>
-
-              {selectedEffect.presets.length > 0 && (
-                <div className="preset-row">
-                  {selectedEffect.presets.map((preset) => (
-                    <button
-                      className="quiet"
-                      disabled={controlsDisabled || !selection?.videoClips}
-                      key={preset.id}
-                      onClick={() =>
-                        void run(async () => {
-                          await applyEffectPreset(preset);
-                          await refreshEffectState();
-                          setNotice({
-                            tone: "success",
-                            message: `${preset.name} applied.`,
-                          });
-                        })
-                      }
-                    >
-                      {preset.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {effectState?.state !== "none" &&
-                selectedEffect.parameters.length > 0 && (
-                  <div className="parameter-list">
-                    {selectedEffect.parameters.map((parameter) => (
-                      <EffectParameterControl
-                        definition={selectedEffect}
-                        disabled={controlsDisabled}
-                        key={parameter.key}
-                        parameter={parameter}
-                        state={parameterState(effectState, parameter)}
-                        onNavigateKeyframe={(nextParameter, direction) =>
-                          void run(async () => {
-                            const found = await navigateKeyframe(
-                              selectedEffect,
-                              nextParameter,
-                              direction,
-                            );
-                            if (!found) {
-                              setNotice({
-                                tone: "info",
-                                message: "No keyframe in that direction.",
-                              });
-                            }
-                          })
-                        }
-                        onSetInterpolation={(nextParameter, interpolation) =>
-                          void run(async () => {
-                            await setKeyframeInterpolation(
-                              selectedEffect,
-                              nextParameter,
-                              interpolation,
-                            );
-                            await refreshEffectState();
-                          })
-                        }
-                        onSetTimeVarying={(nextParameter, enabled) =>
-                          void run(async () => {
-                            await setParameterTimeVarying(
-                              selectedEffect,
-                              nextParameter,
-                              enabled,
-                            );
-                            await refreshEffectState();
-                          })
-                        }
-                        onSetValue={(nextParameter, value) =>
-                          void run(async () => {
-                            await setEffectParameter(
-                              selectedEffect,
-                              nextParameter,
-                              value,
-                            );
-                            await refreshEffectState();
-                          })
-                        }
-                        onToggleKeyframe={(nextParameter) =>
-                          void run(async () => {
-                            const action = await toggleKeyframeAtPlayhead(
-                              selectedEffect,
-                              nextParameter,
-                            );
-                            await refreshEffectState();
-                            setNotice({
-                              tone: "success",
-                              message: `Keyframe ${action}.`,
-                            });
-                          })
-                        }
-                      />
-                    ))}
-                  </div>
-                )}
-            </>
-          )}
-        </section>
-      </div>
-    );
-  }
-
-  function renderPalette(): JSX.Element {
-    return (
-      <section>
-        <div className="section-heading">
-          <div>
-            <h2>Palette</h2>
-            <p className="hint">
-              Shared by generated media and future palette-aware effects.
-            </p>
-          </div>
-        </div>
-        <select
-          value={paletteId}
-          onChange={(event) => setPaletteId(event.target.value)}
-        >
-          {brandTokens.palettes.map((palette) => (
-            <option value={palette.id} key={palette.id}>
-              {palette.name}
-            </option>
-          ))}
-        </select>
-        <div className="swatches">
-          {brandTokens.palettes
-            .find((palette) => palette.id === paletteId)
-            ?.colors.map((color) => (
-              <span
-                key={color}
-                style={{ backgroundColor: color }}
-                title={color}
-              />
-            ))}
-        </div>
-      </section>
-    );
-  }
-
-  function renderGenerate(): JSX.Element {
-    return (
-      <>
-        {renderPalette()}
-        <section>
-          <div className="section-heading">
-            <div>
-              <h2>Output</h2>
-              <p className="hint">
-                Use the active sequence to avoid scale or frame-rate surprises.
-              </p>
-            </div>
-          </div>
-          <div className="field-grid">
-            <label>
-              Width
-              <input
-                type="number"
-                min="320"
-                max="7680"
-                value={width}
-                onChange={(event) => setWidth(Number(event.target.value))}
-              />
-            </label>
-            <label>
-              Height
-              <input
-                type="number"
-                min="180"
-                max="4320"
-                value={height}
-                onChange={(event) => setHeight(Number(event.target.value))}
-              />
-            </label>
-            <label>
-              FPS
-              <input
-                type="number"
-                min="1"
-                max="120"
-                step="0.001"
-                value={fps}
-                onChange={(event) => setFps(Number(event.target.value))}
-              />
-            </label>
-          </div>
-          <div className="actions output-actions">
-            <button
-              className="quiet"
-              disabled={busy}
-              onClick={() => void run(() => syncOutputToSequence())}
-            >
-              Use Active Sequence
-            </button>
-            <span className="hint">{sequenceName}</span>
-          </div>
-        </section>
-
-        <section>
-          <h2>ASCII Title</h2>
-          <label>
-            Text
-            <textarea
-              value={asciiText}
-              onChange={(event) => setAsciiText(event.target.value)}
-              maxLength={160}
-            />
-          </label>
-          <div className="field-grid two">
-            <label>
-              FIGlet style
-              <select
-                value={asciiFont}
-                onChange={(event) =>
-                  setAsciiFont(
-                    event.target.value as AsciiTitleJobRequest["font"],
-                  )
-                }
-              >
-                {(["Standard", "Slant", "Big", "Small", "Block"] as const).map(
-                  (font) => (
-                    <option key={font}>{font}</option>
-                  ),
-                )}
-              </select>
-            </label>
-            <label>
-              Animation
-              <select
-                value={asciiAnimation}
-                onChange={(event) =>
-                  setAsciiAnimation(
-                    event.target.value as AsciiTitleJobRequest["animation"],
-                  )
-                }
-              >
-                {(["static", "reveal", "flicker", "scramble"] as const).map(
-                  (animation) => (
-                    <option key={animation}>{animation}</option>
-                  ),
-                )}
-              </select>
-            </label>
-          </div>
-          <sp-button
-            variant="accent"
-            disabled={busy || !rendererOnline || asciiText.trim().length === 0}
-            onClick={() =>
-              void run(() =>
-                renderAndImport({
-                  schemaVersion: SCHEMA_VERSION,
-                  kind: "ascii-title",
-                  text: asciiText,
-                  font: asciiFont,
-                  animation: asciiAnimation,
-                  paletteId,
-                  width,
-                  height,
-                  fps,
-                  durationSeconds: 3,
-                  outputName: "moneymoves-ascii.mov",
-                }),
-              )
-            }
-          >
-            Render &amp; Import
-          </sp-button>
-        </section>
-
-        <section>
-          <h2>Map</h2>
-          <label>
-            Country codes (ISO-3, comma separated)
-            <input
-              value={country}
-              onChange={(event) => setCountry(event.target.value.toUpperCase())}
-            />
-          </label>
-          <div className="field-grid two">
-            <label>
-              Animation
-              <select
-                value={mapAnimation}
-                onChange={(event) =>
-                  setMapAnimation(
-                    event.target.value as MapJobRequest["animation"],
-                  )
-                }
-              >
-                {(
-                  [
-                    "fly-to",
-                    "pan-between",
-                    "border-draw",
-                    "fill-reveal",
-                    "pulse-highlight",
-                  ] as const
-                ).map((animation) => (
-                  <option key={animation}>{animation}</option>
-                ))}
-              </select>
-            </label>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={labels}
-                onChange={(event) => setLabels(event.target.checked)}
-              />
-              Labels
-            </label>
-          </div>
-          <sp-button
-            variant="accent"
-            disabled={busy || !rendererOnline || mapCountries.length === 0}
-            onClick={() =>
-              void run(() =>
-                renderAndImport({
-                  schemaVersion: SCHEMA_VERSION,
-                  kind: "map",
-                  countries: mapCountries,
-                  animation: mapAnimation,
-                  projection: "natural-earth",
-                  labels,
-                  transparent: true,
-                  paletteId,
-                  width,
-                  height,
-                  fps,
-                  durationSeconds: 5,
-                  outputName: `moneymoves-map-${mapCountries.join("-").toLowerCase()}.mov`,
-                }),
-              )
-            }
-          >
-            Render &amp; Import
-          </sp-button>
-        </section>
-
-        <section className="deferred-card">
-          <div>
-            <h2>Graphics</h2>
-            <p className="hint">
-              Charts are deferred. The frozen MOGRT prototype can still be
-              inserted at the playhead.
-            </p>
-          </div>
-          <sp-button
-            variant="secondary"
-            disabled={busy}
-            onClick={() =>
-              void run(async () => {
-                const path = await chooseAndInsertMogrt();
-                setNotice({ tone: "success", message: `Inserted ${path}` });
-              })
-            }
-          >
-            Insert MOGRT
-          </sp-button>
-        </section>
-
-        {jobs.length > 0 && (
-          <section>
-            <h2>Render Queue</h2>
-            {jobs.map((job) => (
-              <div className="job" key={job.id}>
-                <span>{job.kind}</span>
-                <span>{job.state}</span>
-                <span>{Math.round(job.progress * 100)}%</span>
-                {(job.state === "queued" || job.state === "running") && (
-                  <button
-                    className="quiet"
-                    onClick={() => void cancelRenderJob(job.id)}
-                  >
-                    Cancel
-                  </button>
-                )}
-              </div>
-            ))}
-          </section>
-        )}
-      </>
-    );
-  }
-
-  function renderDiagnostics(): JSX.Element {
-    return (
-      <>
-        <section>
-          <div className="section-heading">
-            <div>
-              <h2>Host health</h2>
-              <p className="hint">
-                Live information from the active Premiere host and renderer.
-              </p>
-            </div>
-            <button className="quiet" onClick={() => void refreshDiagnostics()}>
-              Refresh
-            </button>
-          </div>
-          <dl>
-            {Object.entries(diagnostics).map(([key, value]) => (
-              <div key={key}>
-                <dt>{key}</dt>
-                <dd>{value}</dd>
-              </div>
-            ))}
-            <div>
-              <dt>renderer</dt>
-              <dd>{rendererOnline ? "Online" : "Offline"}</dd>
-            </div>
-            <div>
-              <dt>schema</dt>
-              <dd>{SCHEMA_VERSION}</dd>
-            </div>
-          </dl>
-          <label>
-            Renderer token
-            <input
-              value={token}
-              type="password"
-              onChange={(event) => setToken(event.target.value)}
-            />
-          </label>
-          <button
-            onClick={() => {
-              setRendererToken(token);
-              void refreshDiagnostics();
-              setNotice({ tone: "success", message: "Renderer token saved." });
-            }}
-          >
-            Save token
-          </button>
-        </section>
-
-        <section>
-          <h2>Phase 0 host gates</h2>
-          <ol className="validation-list">
-            <li>
-              <span className="status planned">Manual</span> Select 20 video
-              clips, apply and remove RGB Shift, then verify each action is one
-              Undo.
-            </li>
-            <li>
-              <span className="status planned">Manual</span> Compare RGB Shift
-              CPU fallback and Metal output in Premiere.
-            </li>
-            <li>
-              <span className="status planned">Manual</span> Import and export
-              the ten-frame transparent ProRes alpha artifact through AME.
-            </li>
-          </ol>
-          <p className="hint">
-            Record the exact project, artifact, timing, and result in the Phase
-            0 validation document before advancing to Frame Gate.
-          </p>
-        </section>
-      </>
-    );
+  function removeSelected(effect: EffectDefinition): void {
+    void run(async () => {
+      const count = await removeEffect(effect.matchName, effect.name);
+      await refreshStates();
+      setNotice({
+        tone: "success",
+        message: `Removed ${effect.name} from ${count} clip${count === 1 ? "" : "s"}.`,
+      });
+    });
   }
 
   return (
     <main className="app-shell">
       <header className="masthead">
         <div>
-          <p className="eyebrow">PREMIERE TOOLKIT</p>
-          <h1>MoneyMoves</h1>
+          <p className="eyebrow">MONEYMOVES</p>
+          <h1>Effects</h1>
         </div>
-        <span
-          className={`health ${rendererOnline ? "online" : "offline"}`}
-          title={rendererOnline ? "Renderer online" : "Renderer offline"}
-        />
+        <p className="selection-state">{selectionCopy(selection)}</p>
       </header>
 
-      <nav aria-label="MoneyMoves workspace" className="workspace-nav">
-        {(
-          [
-            ["home", "Home"],
-            ["effects", "Effects"],
-            ["generate", "Generate"],
-            ["diagnostics", "Diagnostics"],
-          ] as const
-        ).map(([nextView, label]) => (
-          <button
-            className={view === nextView ? "active" : "quiet"}
-            key={nextView}
-            onClick={() => setView(nextView)}
-            type="button"
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
+      {notice.message ? (
+        <p className={`notice ${notice.tone}`}>{notice.message}</p>
+      ) : null}
 
-      <div aria-live="polite" className={`notice ${notice.tone}`}>
-        {notice.message}
-      </div>
+      {installedEffects.length === 0 ? (
+        <p className="empty-state">
+          No MoneyMoves effects are listed yet. Open a Premiere project, then
+          try Apply on a selected clip.
+        </p>
+      ) : (
+        <div className="effect-list">
+          {installedEffects.map((effect) => {
+            const state = effectStates[effect.matchName];
+            const isSelected = effect.matchName === selectedEffect?.matchName;
+            const isOn = state?.state === "all" || state?.state === "some";
+            return (
+              <article
+                className={isSelected ? "effect-card selected" : "effect-card"}
+                key={effect.matchName}
+              >
+                <div className="effect-row">
+                  <button
+                    className="effect-name"
+                    disabled={busy}
+                    onClick={() => chooseEffect(effect)}
+                    type="button"
+                  >
+                    <span>{effect.name}</span>
+                    <span className={isOn ? "status on" : "status off"}>
+                      {appliedCopy(state)}
+                    </span>
+                  </button>
+                  {isOn ? (
+                    <button
+                      className="quiet"
+                      disabled={busy}
+                      onClick={() => removeSelected(effect)}
+                      type="button"
+                    >
+                      Remove
+                    </button>
+                  ) : null}
+                  {state?.state === "some" || !isOn ? (
+                    <button
+                      disabled={busy || !selection?.videoClips}
+                      onClick={() => applyNamed(effect)}
+                      type="button"
+                    >
+                      Apply
+                    </button>
+                  ) : null}
+                </div>
 
-      <div className="workspace-content">
-        {view === "home" && renderHome()}
-        {view === "effects" && renderEffects()}
-        {view === "generate" && renderGenerate()}
-        {view === "diagnostics" && renderDiagnostics()}
-      </div>
+                {isSelected && isOn && effect.parameters.length > 0 ? (
+                  <div className="effect-editor">
+                    {effect.presets.length > 0 ? (
+                      <div className="preset-row">
+                        {effect.presets.map((preset) => (
+                          <button
+                            className="quiet"
+                            disabled={busy}
+                            key={preset.id}
+                            onClick={() =>
+                              void run(async () => {
+                                await applyEffectPreset(preset);
+                                await refreshStates();
+                                setNotice({
+                                  tone: "success",
+                                  message: `${preset.name} applied.`,
+                                });
+                              })
+                            }
+                            type="button"
+                          >
+                            {preset.name}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                    {effect.parameters.map((parameter) => (
+                      <EffectParameterControl
+                        definition={effect}
+                        disabled={busy}
+                        effectState={state}
+                        key={parameter.key}
+                        parameter={parameter}
+                        onSetValue={(nextParameter, value) =>
+                          void run(async () => {
+                            await setEffectParameter(
+                              effect,
+                              nextParameter,
+                              value,
+                            );
+                            await refreshStates();
+                            setNotice({ tone: "info", message: "" });
+                          })
+                        }
+                      />
+                    ))}
+                  </div>
+                ) : null}
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      {selectedEffect && !selectedIsOn && selection?.videoClips ? (
+        <p className="hint">Click an effect to put it on the selected clips.</p>
+      ) : null}
     </main>
   );
 }

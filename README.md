@@ -11,8 +11,8 @@ prototype.
 The repository foundation and first vertical slices are implemented. RGB Shift
 now builds as an arm64 Adobe plugin with software and Premiere GPU entry
 points, packages with PiPL metadata, signs successfully, and installs per user.
-The panel-first Phase 0 work adds contextual Home, Effects, Generate, and
-Diagnostics workflows. Frame Gate now has a signed CPU/Metal bundle and a
+The panel-first Phase 0 work is a clip-driven apply / remove / slider
+surface for installed native effects. Frame Gate now has a signed CPU/Metal bundle and a
 complete panel surface. Premiere 25.6.4 host rendering and undo validation
 remain active local gates; see [Development setup](docs/development-setup.md).
 

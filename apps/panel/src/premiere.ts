@@ -654,8 +654,17 @@ export async function hostDiagnostics(): Promise<Record<string, string>> {
 
 export async function getInstalledMoneyMovesEffects(): Promise<string[]> {
   const ppro = getPremiere();
-  const availableEffects = await ppro.VideoFilterFactory.getMatchNames();
-  return availableEffects.filter((name: string) =>
-    name.startsWith("com.moneymoves."),
-  );
+  const factory = ppro.VideoFilterFactory;
+  if (!factory || typeof factory.getMatchNames !== "function") return [];
+  const availableEffects = await factory.getMatchNames();
+  const names = Array.isArray(availableEffects) ? availableEffects : [];
+  return names
+    .map((item: unknown) => {
+      if (typeof item === "string") return item;
+      if (item && typeof item === "object" && "matchName" in item) {
+        return String((item as { matchName: unknown }).matchName);
+      }
+      return "";
+    })
+    .filter((name: string) => name.startsWith("com.moneymoves."));
 }

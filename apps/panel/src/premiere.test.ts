@@ -6,6 +6,7 @@ import {
   frameGateTimingFromTicks,
   getSelectionSummary,
   inspectEffectSelection,
+  getInstalledMoneyMovesEffects,
   removeEffect,
   setEffectParameter,
   setPremiereProviderForTesting,
@@ -160,6 +161,29 @@ describe("Premiere effect transactions", () => {
       listener,
       false,
     );
+  });
+});
+
+describe("installed MoneyMoves effect detection", () => {
+  it("returns an empty list when Premiere has no match-name API", async () => {
+    setPremiereProviderForTesting(() => ({ VideoFilterFactory: {} }));
+    await expect(getInstalledMoneyMovesEffects()).resolves.toEqual([]);
+  });
+
+  it("keeps only MoneyMoves match names", async () => {
+    setPremiereProviderForTesting(() => ({
+      VideoFilterFactory: {
+        getMatchNames: vi.fn(async () => [
+          "AE.ADBE Gaussian Blur",
+          "com.moneymoves.rgb-shift",
+          { matchName: "com.moneymoves.frame-gate" },
+        ]),
+      },
+    }));
+    await expect(getInstalledMoneyMovesEffects()).resolves.toEqual([
+      "com.moneymoves.rgb-shift",
+      "com.moneymoves.frame-gate",
+    ]);
   });
 });
 
