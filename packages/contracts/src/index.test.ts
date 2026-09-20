@@ -78,4 +78,13 @@ describe("shared contracts", () => {
     ]);
     expect(halftone?.presets).toHaveLength(3);
   });
+
+  it("defines the panel contract for Dot Matrix", () => {
+    const dotMatrix = getEffectDefinition("com.moneymoves.dot-matrix");
+    expect(dotMatrix?.status).toBe("available");
+    expect(dotMatrix?.parameters.map((parameter) => parameter.index)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8,
+    ]);
+    expect(dotMatrix?.presets).toHaveLength(3);
+  });
 });

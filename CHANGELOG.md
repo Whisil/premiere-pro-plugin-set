@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.3.0 - Unreleased
+## 0.4.0 - Unreleased
+
+- Add the panel-driven Dot Matrix CPU/Metal effect with branded palettes,
+  custom colors, luminance-sized dots, and named presets.
+
+## 0.3.0 - 2026-09-20
 
 - Add the panel-driven Halftone CPU/Metal effect with branded palettes, custom
   colors, three dot shapes, keyframable controls, and named presets.

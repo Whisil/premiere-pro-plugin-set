@@ -78,6 +78,7 @@ just native-rgb-build
 just native-rgb-install
 just native-frame-install
 just native-halftone-install
+just native-dot-matrix-install
 ```
 
 `prgpu-build` 0.2.0 has a crates.io include-path defect for its bundled `vekl` shaders. The RGB Shift build script resolves the `vekl` copy belonging to the exact pinned `prgpu` crate. Set `PRGPU_VEKL_ROOT` only when using a vendored Cargo registry.

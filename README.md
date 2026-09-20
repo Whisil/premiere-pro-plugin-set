@@ -46,6 +46,7 @@ require UXP Developer Tool; that tool is only used for debugging source builds.
 - `native/plugins/rgb-shift`: first loadable CPU/Metal Adobe effect bundle.
 - `native/plugins/frame-gate`: reversible CPU/Metal frame-throttle effect bundle.
 - `native/plugins/halftone`: palette-aware CPU/Metal print-pattern effect bundle.
+- `native/plugins/dot-matrix`: palette-aware CPU/Metal luminance-dot effect bundle.
 - `mogrts`: After Effects authoring scripts and generated-template documentation.
 
 The implementation roadmap is tracked in [Roadmap](docs/roadmap.md), with decisions in [Architecture](docs/architecture.md) and the visual direction captured in the [style inventory](docs/style-inventory.md).

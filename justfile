@@ -92,3 +92,30 @@ native-halftone-bundle profile:
 
 native-halftone-install: native-halftone-build
     ./scripts/install-native-dev.sh "{{target_dir}}/debug/MoneyMoves Halftone.plugin"
+
+native-dot-matrix-build: native-validate
+    cargo build -p moneymoves-dot-matrix --target aarch64-apple-darwin
+    just native-dot-matrix-bundle debug
+
+native-dot-matrix-release: native-validate
+    cargo build -p moneymoves-dot-matrix --release --target aarch64-apple-darwin
+    just native-dot-matrix-bundle release
+
+native-dot-matrix-bundle profile:
+    #!/bin/zsh
+    set -euo pipefail
+    bundle="{{target_dir}}/{{profile}}/MoneyMoves Dot Matrix.plugin"
+    artifact_dir="{{target_dir}}/aarch64-apple-darwin/{{profile}}"
+    rm -rf "$bundle"
+    mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources"
+    cp "$artifact_dir/libmoneymoves_dot_matrix.dylib" "$bundle/Contents/MacOS/MoneyMoves Dot Matrix"
+    cp "$artifact_dir/moneymoves-dot-matrix.rsrc" "$bundle/Contents/Resources/MoneyMoves Dot Matrix.rsrc"
+    cp "$artifact_dir/moneymoves-dot-matrix_PkgInfo" "$bundle/Contents/PkgInfo"
+    cp "$artifact_dir/moneymoves-dot-matrix_Info.plist" "$bundle/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c 'Set :CFBundleIdentifier com.moneymoves.dot-matrix' "$bundle/Contents/Info.plist"
+    codesign --force --deep --sign - "$bundle"
+    codesign --verify --deep --strict "$bundle"
+    print "Created $bundle"
+
+native-dot-matrix-install: native-dot-matrix-build
+    ./scripts/install-native-dev.sh "{{target_dir}}/debug/MoneyMoves Dot Matrix.plugin"

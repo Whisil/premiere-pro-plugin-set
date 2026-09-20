@@ -41,6 +41,7 @@ tooling outside Premiere.
 - Loadable arm64 RGB Shift bundle with AE-style software and Premiere Metal entry points, PiPL packaging, ad-hoc signing, and per-user installation.
 - Panel-driven arm64 Frame Gate bundle with clip-local timing metadata, CPU/Metal paths, hidden-frame alpha output, and four presets.
 - Production RGB Shift edge modes/presets and a panel-driven Halftone CPU/Metal bundle with named palettes and custom colors.
+- Panel-driven Dot Matrix CPU/Metal bundle with branded/custom palettes and luminance-sized dots.
 - Standalone CCX release packaging for normal installation without UXP Developer Tool.
 - Reproducible ten-frame ProRes 4444 alpha feasibility artifact.
 
