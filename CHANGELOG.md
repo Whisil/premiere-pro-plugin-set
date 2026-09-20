@@ -2,6 +2,8 @@
 
 ## 0.12.0 - Unreleased
 
+- Add a double-click offline installer that packages, verifies, backs up, and
+  installs the panel without Creative Cloud Desktop or UXP Developer Tool.
 - Add a real-time panel-driven ASCII video effect with Standard, Block, Dot,
   Binary, Shade, and Braille families; source/mono/palette color modes; custom
   colors; CPU fallback; and Metal rendering.

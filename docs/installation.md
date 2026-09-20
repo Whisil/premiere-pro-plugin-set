@@ -11,7 +11,11 @@ UPIA="/Library/Application Support/Adobe/Adobe Desktop Common/RemoteComponents/U
 ## Replace a blank panel
 
 Premiere keeps a leftover copy until it is removed. Quit Premiere and UXP
-Developer Tool, then from the repository root:
+Developer Tool, then double-click `Install MoneyMoves Toolkit.command` in the
+repository root. This is the normal offline installation path and does not
+open Creative Cloud or UXP Developer Tool.
+
+The equivalent Terminal command is:
 
 ```sh
 pnpm reinstall:panel
@@ -27,7 +31,7 @@ The command refuses to run while Premiere or UXP Developer Tool is open. This
 protects unsaved projects and prevents either application from restoring stale
 plugin state during installation.
 
-## Recommended: install the packaged panel without Creative Cloud Desktop
+## Alternative: install the packaged panel with Adobe UPIA
 
 The current panel package is:
 

@@ -30,15 +30,25 @@ sudo_cmd() {
   fi
 }
 
-if pgrep -f 'Adobe Premiere Pro 2025.app/Contents/MacOS/Adobe Premiere Pro 2025' >/dev/null; then
-  echo "Quit Premiere Pro first, then run this again." >&2
-  exit 1
-fi
+check_closed() {
+  local label="$1"
+  local pattern="$2"
+  local status
 
-if pgrep -if 'UXP Developer Tool' >/dev/null; then
-  echo "Quit UXP Developer Tool first, then run this again." >&2
-  exit 1
-fi
+  if pgrep -if "$pattern" >/dev/null 2>&1; then
+    echo "Quit $label first, then run this again." >&2
+    exit 20
+  else
+    status=$?
+    if [[ "$status" -ne 1 ]]; then
+      echo "Unable to verify whether $label is running; no installation changes were made." >&2
+      exit 21
+    fi
+  fi
+}
+
+check_closed "Premiere Pro" 'Adobe Premiere Pro 2025.app/Contents/MacOS/Adobe Premiere Pro 2025'
+check_closed "UXP Developer Tool" 'UXP Developer Tool'
 
 "$repo_root/scripts/package-panel.sh"
 
