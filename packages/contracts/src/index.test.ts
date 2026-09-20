@@ -105,4 +105,15 @@ describe("shared contracts", () => {
     ]);
     expect(dither?.presets).toHaveLength(3);
   });
+
+  it("defines the radial Chromatic Aberration contract", () => {
+    const chromatic = getEffectDefinition(
+      "com.moneymoves.chromatic-aberration",
+    );
+    expect(chromatic?.status).toBe("available");
+    expect(chromatic?.parameters.map((parameter) => parameter.index)).toEqual([
+      1, 2, 3, 4, 5, 6,
+    ]);
+    expect(chromatic?.presets).toHaveLength(3);
+  });
 });

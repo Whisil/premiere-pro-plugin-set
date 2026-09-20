@@ -173,3 +173,30 @@ native-dither-bundle profile:
 
 native-dither-install: native-dither-build
     ./scripts/install-native-dev.sh "{{target_dir}}/debug/MoneyMoves Dither.plugin"
+
+native-chromatic-build: native-validate
+    cargo build -p moneymoves-chromatic-aberration --target aarch64-apple-darwin
+    just native-chromatic-bundle debug
+
+native-chromatic-release: native-validate
+    cargo build -p moneymoves-chromatic-aberration --release --target aarch64-apple-darwin
+    just native-chromatic-bundle release
+
+native-chromatic-bundle profile:
+    #!/bin/zsh
+    set -euo pipefail
+    bundle="{{target_dir}}/{{profile}}/MoneyMoves Chromatic Aberration.plugin"
+    artifact_dir="{{target_dir}}/aarch64-apple-darwin/{{profile}}"
+    rm -rf "$bundle"
+    mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources"
+    cp "$artifact_dir/libmoneymoves_chromatic_aberration.dylib" "$bundle/Contents/MacOS/MoneyMoves Chromatic Aberration"
+    cp "$artifact_dir/moneymoves-chromatic-aberration.rsrc" "$bundle/Contents/Resources/MoneyMoves Chromatic Aberration.rsrc"
+    cp "$artifact_dir/moneymoves-chromatic-aberration_PkgInfo" "$bundle/Contents/PkgInfo"
+    cp "$artifact_dir/moneymoves-chromatic-aberration_Info.plist" "$bundle/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c 'Set :CFBundleIdentifier com.moneymoves.chromatic-aberration' "$bundle/Contents/Info.plist"
+    codesign --force --deep --sign - "$bundle"
+    codesign --verify --deep --strict "$bundle"
+    print "Created $bundle"
+
+native-chromatic-install: native-chromatic-build
+    ./scripts/install-native-dev.sh "{{target_dir}}/debug/MoneyMoves Chromatic Aberration.plugin"

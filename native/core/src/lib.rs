@@ -1,3 +1,4 @@
+pub mod chromatic_aberration;
 pub mod dither;
 pub mod dot_matrix;
 pub mod eight_bit;
