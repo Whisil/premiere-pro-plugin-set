@@ -69,4 +69,13 @@ describe("shared contracts", () => {
     expect(frameGate?.status).toBe("available");
     expect(frameGate?.presets).toEqual(FRAME_GATE_PRESETS);
   });
+
+  it("defines the panel contract for Halftone", () => {
+    const halftone = getEffectDefinition("com.moneymoves.halftone");
+    expect(halftone?.status).toBe("available");
+    expect(halftone?.parameters.map((parameter) => parameter.index)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9,
+    ]);
+    expect(halftone?.presets).toHaveLength(3);
+  });
 });

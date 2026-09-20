@@ -1,6 +1,14 @@
 # Changelog
 
-## 0.2.0 - Unreleased
+## 0.3.0 - Unreleased
+
+- Add the panel-driven Halftone CPU/Metal effect with branded palettes, custom
+  colors, three dot shapes, keyframable controls, and named presets.
+- Harden RGB Shift with Clamp/Mirror/Wrap edge behavior and three presets.
+- Normalize Premiere color values between panel hex controls and native Adobe
+  color parameters.
+
+## 0.2.0 - 2026-09-20
 
 - Add the panel-driven Frame Gate native effect with CPU/Metal rendering,
   clip-local head/tail timing, reversible presets, and batch undo support.

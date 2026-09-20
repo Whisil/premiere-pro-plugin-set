@@ -65,3 +65,30 @@ native-frame-bundle profile:
 
 native-frame-install: native-frame-build
     ./scripts/install-native-dev.sh "{{target_dir}}/debug/MoneyMoves Frame Gate.plugin"
+
+native-halftone-build: native-validate
+    cargo build -p moneymoves-halftone --target aarch64-apple-darwin
+    just native-halftone-bundle debug
+
+native-halftone-release: native-validate
+    cargo build -p moneymoves-halftone --release --target aarch64-apple-darwin
+    just native-halftone-bundle release
+
+native-halftone-bundle profile:
+    #!/bin/zsh
+    set -euo pipefail
+    bundle="{{target_dir}}/{{profile}}/MoneyMoves Halftone.plugin"
+    artifact_dir="{{target_dir}}/aarch64-apple-darwin/{{profile}}"
+    rm -rf "$bundle"
+    mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources"
+    cp "$artifact_dir/libmoneymoves_halftone.dylib" "$bundle/Contents/MacOS/MoneyMoves Halftone"
+    cp "$artifact_dir/moneymoves-halftone.rsrc" "$bundle/Contents/Resources/MoneyMoves Halftone.rsrc"
+    cp "$artifact_dir/moneymoves-halftone_PkgInfo" "$bundle/Contents/PkgInfo"
+    cp "$artifact_dir/moneymoves-halftone_Info.plist" "$bundle/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c 'Set :CFBundleIdentifier com.moneymoves.halftone' "$bundle/Contents/Info.plist"
+    codesign --force --deep --sign - "$bundle"
+    codesign --verify --deep --strict "$bundle"
+    print "Created $bundle"
+
+native-halftone-install: native-halftone-build
+    ./scripts/install-native-dev.sh "{{target_dir}}/debug/MoneyMoves Halftone.plugin"
