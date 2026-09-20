@@ -200,3 +200,30 @@ native-chromatic-bundle profile:
 
 native-chromatic-install: native-chromatic-build
     ./scripts/install-native-dev.sh "{{target_dir}}/debug/MoneyMoves Chromatic Aberration.plugin"
+
+native-barrel-blur-build: native-validate
+    cargo build -p moneymoves-barrel-blur --target aarch64-apple-darwin
+    just native-barrel-blur-bundle debug
+
+native-barrel-blur-release: native-validate
+    cargo build -p moneymoves-barrel-blur --release --target aarch64-apple-darwin
+    just native-barrel-blur-bundle release
+
+native-barrel-blur-bundle profile:
+    #!/bin/zsh
+    set -euo pipefail
+    bundle="{{target_dir}}/{{profile}}/MoneyMoves Barrel Blur.plugin"
+    artifact_dir="{{target_dir}}/aarch64-apple-darwin/{{profile}}"
+    rm -rf "$bundle"
+    mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources"
+    cp "$artifact_dir/libmoneymoves_barrel_blur.dylib" "$bundle/Contents/MacOS/MoneyMoves Barrel Blur"
+    cp "$artifact_dir/moneymoves-barrel-blur.rsrc" "$bundle/Contents/Resources/MoneyMoves Barrel Blur.rsrc"
+    cp "$artifact_dir/moneymoves-barrel-blur_PkgInfo" "$bundle/Contents/PkgInfo"
+    cp "$artifact_dir/moneymoves-barrel-blur_Info.plist" "$bundle/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c 'Set :CFBundleIdentifier com.moneymoves.barrel-blur' "$bundle/Contents/Info.plist"
+    codesign --force --deep --sign - "$bundle"
+    codesign --verify --deep --strict "$bundle"
+    print "Created $bundle"
+
+native-barrel-blur-install: native-barrel-blur-build
+    ./scripts/install-native-dev.sh "{{target_dir}}/debug/MoneyMoves Barrel Blur.plugin"

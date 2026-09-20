@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.7.0 - Unreleased
+## 0.8.0 - Unreleased
+
+- Add the panel-driven Barrel Blur CPU/Metal effect with barrel/pincushion
+  distortion, radial edge blur, optical-center controls, and quality modes.
+
+## 0.7.0 - 2026-09-20
 
 - Add the panel-driven Chromatic Aberration CPU/Metal effect with radial lens
   separation, adjustable optical center, falloff, edge modes, and presets.

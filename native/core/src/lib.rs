@@ -1,3 +1,4 @@
+pub mod barrel_blur;
 pub mod chromatic_aberration;
 pub mod dither;
 pub mod dot_matrix;

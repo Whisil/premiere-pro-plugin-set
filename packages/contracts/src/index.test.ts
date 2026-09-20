@@ -116,4 +116,13 @@ describe("shared contracts", () => {
     ]);
     expect(chromatic?.presets).toHaveLength(3);
   });
+
+  it("defines the quality-controlled Barrel Blur contract", () => {
+    const barrelBlur = getEffectDefinition("com.moneymoves.barrel-blur");
+    expect(barrelBlur?.status).toBe("available");
+    expect(barrelBlur?.parameters.map((parameter) => parameter.index)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8,
+    ]);
+    expect(barrelBlur?.presets).toHaveLength(3);
+  });
 });
