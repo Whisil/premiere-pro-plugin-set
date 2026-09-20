@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.5.0 - Unreleased
+## 0.6.0 - Unreleased
+
+- Add the panel-driven Dither CPU/Metal effect with Bayer 2×2/4×4/8×8 and
+  deterministic blue-noise modes, OKLab palettes, custom colors, and presets.
+
+## 0.5.0 - 2026-09-20
 
 - Add the panel-driven 8-bit CPU/Metal effect with pixel blocks, OKLab
   quantization, named palettes, 2–8 custom colors, and presets.

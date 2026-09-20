@@ -3,6 +3,7 @@ resolver = "2"
 members = [
   "native/core",
   "native/plugins/dot-matrix",
+  "native/plugins/dither",
   "native/plugins/eight-bit",
   "native/plugins/frame-gate",
   "native/plugins/halftone",
@@ -11,7 +12,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.5.0"
+version = "0.6.0"
 edition = "2024"
 license = "MIT"
 authors = ["MoneyMoves"]

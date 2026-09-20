@@ -43,6 +43,7 @@ tooling outside Premiere.
 - Production RGB Shift edge modes/presets and a panel-driven Halftone CPU/Metal bundle with named palettes and custom colors.
 - Panel-driven Dot Matrix CPU/Metal bundle with branded/custom palettes and luminance-sized dots.
 - Panel-driven 8-bit CPU/Metal bundle with pixel blocks, OKLab quantization, and 2–8 custom colors.
+- Panel-driven Dither CPU/Metal bundle with Bayer and deterministic blue-noise modes plus 2–8 colors.
 - Standalone CCX release packaging for normal installation without UXP Developer Tool.
 - Reproducible ten-frame ProRes 4444 alpha feasibility artifact.
 

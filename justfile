@@ -146,3 +146,30 @@ native-eight-bit-bundle profile:
 
 native-eight-bit-install: native-eight-bit-build
     ./scripts/install-native-dev.sh "{{target_dir}}/debug/MoneyMoves 8-bit.plugin"
+
+native-dither-build: native-validate
+    cargo build -p moneymoves-dither --target aarch64-apple-darwin
+    just native-dither-bundle debug
+
+native-dither-release: native-validate
+    cargo build -p moneymoves-dither --release --target aarch64-apple-darwin
+    just native-dither-bundle release
+
+native-dither-bundle profile:
+    #!/bin/zsh
+    set -euo pipefail
+    bundle="{{target_dir}}/{{profile}}/MoneyMoves Dither.plugin"
+    artifact_dir="{{target_dir}}/aarch64-apple-darwin/{{profile}}"
+    rm -rf "$bundle"
+    mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources"
+    cp "$artifact_dir/libmoneymoves_dither.dylib" "$bundle/Contents/MacOS/MoneyMoves Dither"
+    cp "$artifact_dir/moneymoves-dither.rsrc" "$bundle/Contents/Resources/MoneyMoves Dither.rsrc"
+    cp "$artifact_dir/moneymoves-dither_PkgInfo" "$bundle/Contents/PkgInfo"
+    cp "$artifact_dir/moneymoves-dither_Info.plist" "$bundle/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c 'Set :CFBundleIdentifier com.moneymoves.dither' "$bundle/Contents/Info.plist"
+    codesign --force --deep --sign - "$bundle"
+    codesign --verify --deep --strict "$bundle"
+    print "Created $bundle"
+
+native-dither-install: native-dither-build
+    ./scripts/install-native-dev.sh "{{target_dir}}/debug/MoneyMoves Dither.plugin"

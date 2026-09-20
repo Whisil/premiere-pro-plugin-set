@@ -96,4 +96,13 @@ describe("shared contracts", () => {
     ]);
     expect(eightBit?.presets).toHaveLength(3);
   });
+
+  it("defines the ordered and blue-noise Dither contract", () => {
+    const dither = getEffectDefinition("com.moneymoves.dither");
+    expect(dither?.status).toBe("available");
+    expect(dither?.parameters.map((parameter) => parameter.index)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+    ]);
+    expect(dither?.presets).toHaveLength(3);
+  });
 });

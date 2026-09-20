@@ -2,7 +2,7 @@
   "manifestVersion": 5,
   "id": "com.moneymoves.premiere-toolkit",
   "name": "MoneyMoves Toolkit",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "main": "index.html",
   "host": {
     "app": "premierepro",

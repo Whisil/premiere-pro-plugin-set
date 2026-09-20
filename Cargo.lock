@@ -1040,14 +1040,25 @@ dependencies = [
 
 [[package]]
 name = "moneymoves-core"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "serde",
 ]
 
 [[package]]
+name = "moneymoves-dither"
+version = "0.6.0"
+dependencies = [
+ "bytemuck",
+ "exaecut-after-effects",
+ "exaecut-premiere",
+ "prgpu",
+ "prgpu-build",
+]
+
+[[package]]
 name = "moneymoves-dot-matrix"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "bytemuck",
  "exaecut-after-effects",
@@ -1058,7 +1069,7 @@ dependencies = [
 
 [[package]]
 name = "moneymoves-eight-bit"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "bytemuck",
  "exaecut-after-effects",
@@ -1069,7 +1080,7 @@ dependencies = [
 
 [[package]]
 name = "moneymoves-frame-gate"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "bytemuck",
  "exaecut-after-effects",
@@ -1080,7 +1091,7 @@ dependencies = [
 
 [[package]]
 name = "moneymoves-halftone"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "bytemuck",
  "exaecut-after-effects",
@@ -1091,7 +1102,7 @@ dependencies = [
 
 [[package]]
 name = "moneymoves-rgb-shift"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "bytemuck",
  "exaecut-after-effects",
@@ -1807,7 +1818,7 @@ dependencies = [
 
 [[package]]
 name = "shaderbench"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "clap",
