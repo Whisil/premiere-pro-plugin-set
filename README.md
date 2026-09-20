@@ -35,6 +35,8 @@ Run `pnpm package:panel`, then double-click the generated
 will show the installation confirmation. Quit and reopen Premiere, then choose
 **Window → UXP Plugins → MoneyMoves Toolkit**. The installed panel does not
 require UXP Developer Tool; that tool is only used for debugging source builds.
+If Creative Cloud Desktop does not launch, use the UPIA fallback in
+[Installation](docs/installation.md).
 
 ## Components
 
