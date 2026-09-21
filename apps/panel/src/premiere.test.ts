@@ -121,6 +121,20 @@ describe("Premiere effect transactions", () => {
     ).toMatchObject({ mixed: false, value: 0 });
   });
 
+  it("recognizes video host proxies by Premiere media type", async () => {
+    const host = createPremiereMock(1, false, [], true);
+    setPremiereProviderForTesting(() => host.ppro);
+
+    await expect(getSelectionSummary()).resolves.toEqual({
+      selectedItems: 1,
+      videoClips: 1,
+      nonVideoItems: 0,
+    });
+    await expect(
+      applyEffect("com.moneymoves.rgb-shift", "RGB Shift"),
+    ).resolves.toBe(1);
+  });
+
   it("sets an effect parameter on every applied selected clip in one undo", async () => {
     const host = createPremiereMock(2, true);
     setPremiereProviderForTesting(() => host.ppro);
@@ -191,11 +205,20 @@ function createPremiereMock(
   clipCount: number,
   withAppliedEffect = false,
   amounts: number[] = [],
+  useProxyConstructor = false,
 ) {
   const appendAction = Symbol("append");
   const removeAction = Symbol("remove");
   const addAction = vi.fn();
   const parameterAction = Symbol("parameter");
+  let mutationScope = false;
+
+  function requireMutationScope<T>(value: T): T {
+    if (!mutationScope) {
+      throw new Error("Action created outside Premiere mutation scope");
+    }
+    return value;
+  }
 
   function createComponentForClip(
     amount = 12,
@@ -211,11 +234,19 @@ function createPremiereMock(
       areKeyframesSupported: vi.fn(async () => true),
       getKeyframeListAsTickTimes: vi.fn(async () => []),
       createKeyframe: vi.fn((nextValue) => ({ value: nextValue })),
-      createSetValueAction: vi.fn(() => parameterAction),
-      createAddKeyframeAction: vi.fn(() => parameterAction),
-      createSetTimeVaryingAction: vi.fn(() => parameterAction),
-      createRemoveKeyframeAction: vi.fn(() => parameterAction),
-      createSetInterpolationAtKeyframeAction: vi.fn(() => parameterAction),
+      createSetValueAction: vi.fn(() => requireMutationScope(parameterAction)),
+      createAddKeyframeAction: vi.fn(() =>
+        requireMutationScope(parameterAction),
+      ),
+      createSetTimeVaryingAction: vi.fn(() =>
+        requireMutationScope(parameterAction),
+      ),
+      createRemoveKeyframeAction: vi.fn(() =>
+        requireMutationScope(parameterAction),
+      ),
+      createSetInterpolationAtKeyframeAction: vi.fn(() =>
+        requireMutationScope(parameterAction),
+      ),
       findPreviousKeyframe: vi.fn(async () => undefined),
       findNextKeyframe: vi.fn(async () => undefined),
     }));
@@ -242,14 +273,21 @@ function createPremiereMock(
     constructor(index: number) {
       this.component = createComponentForClip(amounts[index] ?? 12);
       this.chain = {
-        createAppendComponentAction: vi.fn(() => appendAction),
-        createRemoveComponentAction: vi.fn(() => removeAction),
+        createAppendComponentAction: vi.fn(() =>
+          requireMutationScope(appendAction),
+        ),
+        createRemoveComponentAction: vi.fn(() =>
+          requireMutationScope(removeAction),
+        ),
         getComponentCount: vi.fn(() => (withAppliedEffect ? 1 : 0)),
         getComponentAtIndex: vi.fn(() => this.component),
       };
     }
 
     getComponentChain = vi.fn(async () => this.chain);
+    getMediaType = vi.fn(async () => ({
+      toString: (): string => "00000000-0000-0000-0000-000000000001",
+    }));
     getStartTime = vi.fn(async () => ({ ticks: "254016000000" }));
     getDuration = vi.fn(async () => ({ ticks: "1270080000000" }));
   }
@@ -266,7 +304,14 @@ function createPremiereMock(
   );
   const project = {
     getActiveSequence: vi.fn(async () => sequence),
-    lockedAccess: vi.fn((callback: () => void) => callback()),
+    lockedAccess: vi.fn((callback: () => void) => {
+      mutationScope = true;
+      try {
+        callback();
+      } finally {
+        mutationScope = false;
+      }
+    }),
     executeTransaction,
   };
   const sequence = {
@@ -286,7 +331,16 @@ function createPremiereMock(
         public alpha: number,
       ) {}
     },
-    VideoClipTrackItem,
+    VideoClipTrackItem: useProxyConstructor
+      ? class HostVideoClip {}
+      : VideoClipTrackItem,
+    Constants: {
+      MediaType: {
+        VIDEO: {
+          toString: (): string => "00000000-0000-0000-0000-000000000001",
+        },
+      },
+    },
     VideoFilterFactory: { createComponent },
   };
 

@@ -130,20 +130,51 @@ async function selectedItems(sequence: any): Promise<any[]> {
   return selection.getTrackItems();
 }
 
-function isVideoClip(ppro: any, item: any): boolean {
+function guidString(value: unknown): string | undefined {
+  if (value === undefined || value === null) return undefined;
   try {
-    return item instanceof ppro.VideoClipTrackItem;
+    const normalized = String(value);
+    return normalized === "[object Object]" ? undefined : normalized;
   } catch {
+    return undefined;
+  }
+}
+
+async function isVideoClip(ppro: any, item: any): Promise<boolean> {
+  const videoMediaType = ppro.Constants?.MediaType?.VIDEO;
+  if (
+    typeof item?.getMediaType === "function" &&
+    videoMediaType !== undefined
+  ) {
+    try {
+      const mediaType = await item.getMediaType();
+      if (mediaType === videoMediaType) return true;
+      const mediaTypeId = guidString(mediaType);
+      const videoMediaTypeId = guidString(videoMediaType);
+      if (mediaTypeId && videoMediaTypeId) {
+        return mediaTypeId === videoMediaTypeId;
+      }
+    } catch {
+      // Older host proxies can reject getMediaType; use the class fallback.
+    }
+  }
+
+  try {
     return (
-      typeof item?.getComponentChain === "function" &&
-      typeof item?.getMediaType === "function"
+      typeof ppro.VideoClipTrackItem === "function" &&
+      item instanceof ppro.VideoClipTrackItem
     );
+  } catch {
+    return false;
   }
 }
 
 async function selectedVideoClips(ppro: any, sequence: any): Promise<any[]> {
   const items = await selectedItems(sequence);
-  return items.filter((item: any) => isVideoClip(ppro, item));
+  const matches = await Promise.all(
+    items.map((item: any) => isVideoClip(ppro, item)),
+  );
+  return items.filter((_, index) => matches[index]);
 }
 
 async function findComponent(
@@ -191,11 +222,15 @@ function valueForHost(
   );
 }
 
-function runTransaction(project: any, label: string, actions: any[]): void {
+function runTransaction(
+  project: any,
+  label: string,
+  buildActions: (compoundAction: any) => void,
+): void {
   let success = false;
   project.lockedAccess(() => {
     success = project.executeTransaction((compoundAction: any) => {
-      for (const action of actions) compoundAction.addAction(action);
+      buildActions(compoundAction);
     }, label);
   });
   if (!success) throw new Error(`Premiere rejected the ${label} transaction.`);
@@ -215,13 +250,13 @@ function resolvePresetValue(
   );
 }
 
-async function createSetValueActions(
+function addSetValueActions(
+  compoundAction: any,
   ppro: any,
   components: any[],
   definition: EffectDefinition,
   parameters: Record<string, string | number | boolean>,
-): Promise<any[]> {
-  const actions: any[] = [];
+): void {
   for (const component of components) {
     for (const [key, rawValue] of Object.entries(parameters)) {
       const parameter = definition.parameters.find(
@@ -236,35 +271,54 @@ async function createSetValueActions(
           resolvePresetValue(definition, key, rawValue),
         ),
       );
-      actions.push(param.createSetValueAction(keyframe, true));
+      compoundAction.addAction(param.createSetValueAction(keyframe, true));
     }
   }
-  return actions;
 }
 
-async function createFrameGateTimingActions(
+async function prepareFrameGateTiming(
   prepared: Array<{ clip: any; component: any }>,
   sequence: any,
-): Promise<any[]> {
+): Promise<
+  Array<{
+    component: any;
+    timing: {
+      clipStartSeconds: number;
+      sequenceFps: number;
+      totalFrames: number;
+    };
+  }>
+> {
   const timebase = String(await sequence.getTimebase());
-  const actions: any[] = [];
-  for (const { clip, component } of prepared) {
-    const [start, duration] = await Promise.all([
-      clip.getStartTime(),
-      clip.getDuration(),
-    ]);
-    const timing = frameGateTimingFromTicks(
-      String(start.ticks),
-      String(duration.ticks),
-      timebase,
-    );
+  return Promise.all(
+    prepared.map(async ({ clip, component }) => {
+      const [start, duration] = await Promise.all([
+        clip.getStartTime(),
+        clip.getDuration(),
+      ]);
+      return {
+        component,
+        timing: frameGateTimingFromTicks(
+          String(start.ticks),
+          String(duration.ticks),
+          timebase,
+        ),
+      };
+    }),
+  );
+}
+
+function addFrameGateTimingActions(
+  compoundAction: any,
+  prepared: Awaited<ReturnType<typeof prepareFrameGateTiming>>,
+): void {
+  for (const { component, timing } of prepared) {
     for (const [key, index] of Object.entries(FRAME_GATE_INTERNAL_PARAMS)) {
       const param = component.getParam(index);
       const keyframe = param.createKeyframe(timing[key as keyof typeof timing]);
-      actions.push(param.createSetValueAction(keyframe, true));
+      compoundAction.addAction(param.createSetValueAction(keyframe, true));
     }
   }
-  return actions;
 }
 
 async function getAppliedComponents(
@@ -286,9 +340,9 @@ async function getAppliedComponents(
 export async function getSelectionSummary(): Promise<SelectionSummary> {
   const { ppro, sequence } = await getContext();
   const items = await selectedItems(sequence);
-  const videoClips = items.filter((item: any) =>
-    isVideoClip(ppro, item),
-  ).length;
+  const videoClips = (
+    await Promise.all(items.map((item: any) => isVideoClip(ppro, item)))
+  ).filter(Boolean).length;
   return {
     selectedItems: items.length,
     videoClips,
@@ -389,26 +443,25 @@ export async function applyEffectPreset(preset: EffectPreset): Promise<number> {
       return { clip, chain, component, existing };
     }),
   );
-  const appendActions = prepared
-    .filter(({ existing }) => !existing)
-    .map(({ chain, component }) =>
-      chain.createAppendComponentAction(component),
-    );
-  const parameterActions = await createSetValueActions(
-    ppro,
-    prepared.map(({ component }) => component),
-    definition,
-    preset.parameters,
-  );
-  const timingActions =
+  const timingPlan =
     preset.matchName === FRAME_GATE_MATCH_NAME
-      ? await createFrameGateTimingActions(prepared, sequence)
+      ? await prepareFrameGateTiming(prepared, sequence)
       : [];
-  runTransaction(project, `Apply ${preset.name}`, [
-    ...appendActions,
-    ...parameterActions,
-    ...timingActions,
-  ]);
+  runTransaction(project, `Apply ${preset.name}`, (compoundAction) => {
+    for (const { chain, component, existing } of prepared) {
+      if (!existing) {
+        compoundAction.addAction(chain.createAppendComponentAction(component));
+      }
+    }
+    addSetValueActions(
+      compoundAction,
+      ppro,
+      prepared.map(({ component }) => component),
+      definition,
+      preset.parameters,
+    );
+    addFrameGateTimingActions(compoundAction, timingPlan);
+  });
   return clips.length;
 }
 
@@ -441,7 +494,12 @@ export async function setEffectParameters(
   if (components.length === 0) {
     throw new Error(`Apply ${definition.name} before changing its controls.`);
   }
-  const actions: any[] = [];
+  const plans: Array<{
+    param: any;
+    parameter: EffectParameterDefinition;
+    value: string | number | boolean;
+    timeVarying: boolean;
+  }> = [];
   for (const component of components) {
     for (const [key, value] of Object.entries(values)) {
       const parameter = definition.parameters.find(
@@ -449,21 +507,30 @@ export async function setEffectParameters(
       );
       if (!parameter) continue;
       const param = component.getParam(parameter.index);
-      const keyframe = param.createKeyframe(
-        valueForHost(ppro, parameter, value),
-      );
-      if (parameter.keyframeable && (await param.isTimeVarying())) {
-        actions.push(param.createAddKeyframeAction(keyframe));
-      } else {
-        actions.push(param.createSetValueAction(keyframe, true));
-      }
+      plans.push({
+        param,
+        parameter,
+        value,
+        timeVarying: parameter.keyframeable && (await param.isTimeVarying()),
+      });
     }
   }
   const label =
     Object.keys(values).length === 1
       ? `Set ${definition.name} ${definition.parameters.find((parameter) => parameter.key === Object.keys(values)[0])?.label ?? "parameter"}`
       : `Reset ${definition.name}`;
-  runTransaction(project, label, actions);
+  runTransaction(project, label, (compoundAction) => {
+    for (const plan of plans) {
+      const keyframe = plan.param.createKeyframe(
+        valueForHost(ppro, plan.parameter, plan.value),
+      );
+      compoundAction.addAction(
+        plan.timeVarying
+          ? plan.param.createAddKeyframeAction(keyframe)
+          : plan.param.createSetValueAction(keyframe, true),
+      );
+    }
+  });
   return components.length;
 }
 
@@ -476,13 +543,17 @@ export async function setParameterTimeVarying(
   const { components } = await getAppliedComponents(ppro, sequence, definition);
   if (components.length === 0)
     throw new Error(`Apply ${definition.name} first.`);
-  const actions = components.map((component) =>
-    component.getParam(parameter.index).createSetTimeVaryingAction(enabled),
+  const params = components.map((component) =>
+    component.getParam(parameter.index),
   );
   runTransaction(
     project,
     `${enabled ? "Animate" : "Stop animating"} ${definition.name} ${parameter.label}`,
-    actions,
+    (compoundAction) => {
+      for (const param of params) {
+        compoundAction.addAction(param.createSetTimeVaryingAction(enabled));
+      }
+    },
   );
   return components.length;
 }
@@ -505,19 +576,23 @@ export async function toggleKeyframeAtPlayhead(
   const remove = keyTimes.every((times) =>
     times.some((time: any) => time.ticks === playhead.ticks),
   );
-  const actions: any[] = [];
-  for (const param of params) {
-    if (remove) {
-      actions.push(param.createRemoveKeyframeAction(playhead, true));
-    } else {
-      const value = await param.getValueAtTime(playhead);
-      actions.push(param.createAddKeyframeAction(param.createKeyframe(value)));
-    }
-  }
+  const values = remove
+    ? []
+    : await Promise.all(params.map((param) => param.getValueAtTime(playhead)));
   runTransaction(
     project,
     `${remove ? "Remove" : "Add"} ${definition.name} ${parameter.label} keyframe`,
-    actions,
+    (compoundAction) => {
+      params.forEach((param, index) => {
+        compoundAction.addAction(
+          remove
+            ? param.createRemoveKeyframeAction(playhead, true)
+            : param.createAddKeyframeAction(
+                param.createKeyframe(values[index]),
+              ),
+        );
+      });
+    },
   );
   return remove ? "removed" : "added";
 }
@@ -532,15 +607,23 @@ export async function setKeyframeInterpolation(
   if (components.length === 0)
     throw new Error(`Apply ${definition.name} first.`);
   const playhead = await sequence.getPlayerPosition();
-  const actions = components.map((component) =>
-    component
-      .getParam(parameter.index)
-      .createSetInterpolationAtKeyframeAction(playhead, interpolation, true),
+  const params = components.map((component) =>
+    component.getParam(parameter.index),
   );
   runTransaction(
     project,
     `Set ${definition.name} ${parameter.label} interpolation`,
-    actions,
+    (compoundAction) => {
+      for (const param of params) {
+        compoundAction.addAction(
+          param.createSetInterpolationAtKeyframeAction(
+            playhead,
+            interpolation,
+            true,
+          ),
+        );
+      }
+    },
   );
   return components.length;
 }
@@ -581,13 +664,11 @@ export async function removeEffect(
   if (removals.length === 0) {
     throw new Error(`${displayName} is not applied to the selection.`);
   }
-  runTransaction(
-    project,
-    `Remove ${displayName}`,
-    removals.map(({ chain, component }) =>
-      chain.createRemoveComponentAction(component),
-    ),
-  );
+  runTransaction(project, `Remove ${displayName}`, (compoundAction) => {
+    for (const { chain, component } of removals) {
+      compoundAction.addAction(chain.createRemoveComponentAction(component));
+    }
+  });
   return removals.length;
 }
 
