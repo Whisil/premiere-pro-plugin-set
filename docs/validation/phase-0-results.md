@@ -21,6 +21,26 @@ Environment audit on 2026-09-19:
 
 ## Production installation evidence
 
+### Panel 0.14.0 installation — 2026-09-21
+
+- Built after commits `9ee2213` and `c079bb2` using the standalone offline
+  installer, with Premiere Pro fully closed.
+- Verified release: `MoneyMoves-Toolkit-0.14.0.ccx`, SHA-256
+  `4f42769e50a52a28528b493e908f9390ca647b007c5f1d44b4ef3ca72770349d`.
+- The only MoneyMoves system UXP directory is
+  `/Library/Application Support/Adobe/UXP/Plugins/External/com.moneymoves.premiere-toolkit_0.14.0`.
+  Its `index.html` matches the verified build and its manifest hash matches
+  the CCX manifest.
+- Premiere's UXP registry points to that directory with `status: enabled`.
+  A fresh Premiere Pro 25.6.4 launch recorded the MoneyMoves ID as enabled
+  and one system plug-in added in
+  `UXPLogs_2026-09-21_21-43-56_320186.log`.
+- This establishes installation and discovery only. Panel opening, live
+  apply/remove, one-step Undo, rendering, and keyframe behavior on this build
+  remain **pending host interaction**; do not infer them from unit tests.
+
+### Panel 0.12.2 startup — 2026-09-21
+
 Validated on 2026-09-21 against Premiere Pro 25.6.4:
 
 - Panel release: `MoneyMoves-Toolkit-0.12.2.ccx`, commit `6bb02a3` plus
