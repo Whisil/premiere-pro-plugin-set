@@ -42,6 +42,8 @@ export interface EffectSelectionState {
   parameters: EffectParameterState[];
 }
 
+export type KeyframeInterpolation = "linear" | "hold" | "bezier";
+
 export function fpsFromTimebase(timebase: string): number {
   const ticksPerFrame = Number(timebase);
   const fps = PREMIERE_TICKS_PER_SECOND / ticksPerFrame;
@@ -494,6 +496,7 @@ export async function setEffectParameters(
   if (components.length === 0) {
     throw new Error(`Apply ${definition.name} before changing its controls.`);
   }
+  const playhead = await sequence.getPlayerPosition();
   const plans: Array<{
     param: any;
     parameter: EffectParameterDefinition;
@@ -524,6 +527,7 @@ export async function setEffectParameters(
       const keyframe = plan.param.createKeyframe(
         valueForHost(ppro, plan.parameter, plan.value),
       );
+      if (plan.timeVarying) keyframe.position = playhead;
       compoundAction.addAction(
         plan.timeVarying
           ? plan.param.createAddKeyframeAction(keyframe)
@@ -570,9 +574,10 @@ export async function toggleKeyframeAtPlayhead(
   const params = components.map((component) =>
     component.getParam(parameter.index),
   );
-  const keyTimes = await Promise.all(
-    params.map((param) => param.getKeyframeListAsTickTimes()),
-  );
+  const [keyTimes, timeVarying] = await Promise.all([
+    Promise.all(params.map((param) => param.getKeyframeListAsTickTimes())),
+    Promise.all(params.map((param) => param.isTimeVarying())),
+  ]);
   const remove = keyTimes.every((times) =>
     times.some((time: any) => time.ticks === playhead.ticks),
   );
@@ -584,13 +589,18 @@ export async function toggleKeyframeAtPlayhead(
     `${remove ? "Remove" : "Add"} ${definition.name} ${parameter.label} keyframe`,
     (compoundAction) => {
       params.forEach((param, index) => {
-        compoundAction.addAction(
-          remove
-            ? param.createRemoveKeyframeAction(playhead, true)
-            : param.createAddKeyframeAction(
-                param.createKeyframe(values[index]),
-              ),
-        );
+        if (remove) {
+          compoundAction.addAction(
+            param.createRemoveKeyframeAction(playhead, true),
+          );
+          return;
+        }
+        if (!timeVarying[index]) {
+          compoundAction.addAction(param.createSetTimeVaryingAction(true));
+        }
+        const keyframe = param.createKeyframe(values[index]);
+        keyframe.position = playhead;
+        compoundAction.addAction(param.createAddKeyframeAction(keyframe));
       });
     },
   );
@@ -600,7 +610,7 @@ export async function toggleKeyframeAtPlayhead(
 export async function setKeyframeInterpolation(
   definition: EffectDefinition,
   parameter: EffectParameterDefinition,
-  interpolation: number,
+  interpolation: KeyframeInterpolation,
 ): Promise<number> {
   const { ppro, project, sequence } = await getContext();
   const { components } = await getAppliedComponents(ppro, sequence, definition);
@@ -610,6 +620,13 @@ export async function setKeyframeInterpolation(
   const params = components.map((component) =>
     component.getParam(parameter.index),
   );
+  const interpolationMode =
+    ppro.Constants?.InterpolationMode?.[interpolation.toUpperCase()];
+  if (interpolationMode === undefined) {
+    throw new Error(
+      `Premiere does not expose ${interpolation} keyframe interpolation.`,
+    );
+  }
   runTransaction(
     project,
     `Set ${definition.name} ${parameter.label} interpolation`,
@@ -618,7 +635,7 @@ export async function setKeyframeInterpolation(
         compoundAction.addAction(
           param.createSetInterpolationAtKeyframeAction(
             playhead,
-            interpolation,
+            interpolationMode,
             true,
           ),
         );

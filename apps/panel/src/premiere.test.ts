@@ -11,6 +11,7 @@ import {
   setEffectParameter,
   setPremiereProviderForTesting,
   subscribeToSelectionChanges,
+  toggleKeyframeAtPlayhead,
 } from "./premiere.js";
 
 afterEach(() => {
@@ -150,6 +151,35 @@ describe("Premiere effect transactions", () => {
     expect(host.addAction).toHaveBeenCalledTimes(2);
   });
 
+  it("writes animated parameter changes at the current playhead", async () => {
+    const host = createPremiereMock(1, true, [], false, true);
+    setPremiereProviderForTesting(() => host.ppro);
+    const rgbShift = getEffectDefinition("com.moneymoves.rgb-shift")!;
+    const amount = rgbShift.parameters[0]!;
+
+    await expect(setEffectParameter(rgbShift, amount, 42)).resolves.toBe(1);
+    expect(host.createdKeyframes).toEqual([
+      { value: 42, position: { ticks: "0" } },
+    ]);
+    expect(host.addAction).toHaveBeenCalledTimes(1);
+  });
+
+  it("enables animation and adds a positioned keyframe in one undo", async () => {
+    const host = createPremiereMock(1, true);
+    setPremiereProviderForTesting(() => host.ppro);
+    const rgbShift = getEffectDefinition("com.moneymoves.rgb-shift")!;
+    const amount = rgbShift.parameters[0]!;
+
+    await expect(toggleKeyframeAtPlayhead(rgbShift, amount)).resolves.toBe(
+      "added",
+    );
+    expect(host.executeTransaction).toHaveBeenCalledTimes(1);
+    expect(host.addAction).toHaveBeenCalledTimes(2);
+    expect(host.createdKeyframes).toEqual([
+      { value: 12, position: { ticks: "0" } },
+    ]);
+  });
+
   it("cleans up a Premiere selection listener", async () => {
     const host = createPremiereMock(1);
     const addEventListener = vi.fn();
@@ -206,11 +236,16 @@ function createPremiereMock(
   withAppliedEffect = false,
   amounts: number[] = [],
   useProxyConstructor = false,
+  timeVarying = false,
 ) {
   const appendAction = Symbol("append");
   const removeAction = Symbol("remove");
   const addAction = vi.fn();
   const parameterAction = Symbol("parameter");
+  const createdKeyframes: Array<{
+    value: unknown;
+    position?: { ticks: string };
+  }> = [];
   let mutationScope = false;
 
   function requireMutationScope<T>(value: T): T {
@@ -230,10 +265,14 @@ function createPremiereMock(
         : [amount, 0, 1, 0, -1, 1, 1];
     const params = values.map((value) => ({
       getValueAtTime: vi.fn(async () => value),
-      isTimeVarying: vi.fn(async () => false),
+      isTimeVarying: vi.fn(async () => timeVarying),
       areKeyframesSupported: vi.fn(async () => true),
       getKeyframeListAsTickTimes: vi.fn(async () => []),
-      createKeyframe: vi.fn((nextValue) => ({ value: nextValue })),
+      createKeyframe: vi.fn((nextValue) => {
+        const keyframe = { value: nextValue };
+        createdKeyframes.push(keyframe);
+        return keyframe;
+      }),
       createSetValueAction: vi.fn(() => requireMutationScope(parameterAction)),
       createAddKeyframeAction: vi.fn(() =>
         requireMutationScope(parameterAction),
@@ -319,6 +358,7 @@ function createPremiereMock(
       getTrackItems: vi.fn(async () => clips),
     })),
     getPlayerPosition: vi.fn(async () => ({ ticks: "0" })),
+    setPlayerPosition: vi.fn(async () => true),
     getTimebase: vi.fn(async () => "10160640000"),
   };
   const ppro = {
@@ -340,9 +380,16 @@ function createPremiereMock(
           toString: (): string => "00000000-0000-0000-0000-000000000001",
         },
       },
+      InterpolationMode: { LINEAR: 1, HOLD: 2, BEZIER: 3 },
     },
     VideoFilterFactory: { createComponent },
   };
 
-  return { ppro, addAction, createComponent, executeTransaction };
+  return {
+    ppro,
+    addAction,
+    createComponent,
+    createdKeyframes,
+    executeTransaction,
+  };
 }
