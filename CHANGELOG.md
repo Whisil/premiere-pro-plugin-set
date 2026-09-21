@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.12.2 - Unreleased
+
+- Restore Adobe's `$systemPlugins` registry token in the offline installer so
+  Premiere can initialize the production panel from its system UXP folder.
+- Add a registry regression test that replaces only MoneyMoves while
+  preserving unrelated installed plug-ins.
+
 ## 0.12.1 - Unreleased
 
 - Ship explicit `@1x` panel and plugin-list icons so Premiere does not report a

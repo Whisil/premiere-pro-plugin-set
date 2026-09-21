@@ -9,9 +9,7 @@ if (!source || !output || !version) {
 }
 
 const pluginId = "com.moneymoves.premiere-toolkit";
-const pluginPath =
-  "/Library/Application Support/Adobe/UXP/Plugins/External/" +
-  `${pluginId}_${version}`;
+const pluginPath = `$systemPlugins/External/${pluginId}_${version}`;
 const registry = JSON.parse(await readFile(source, "utf8"));
 const plugins = Array.isArray(registry.plugins) ? registry.plugins : [];
 

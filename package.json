@@ -1,6 +1,6 @@
 {
   "name": "moneymoves-premiere-toolkit",
-  "version": "0.12.1",
+  "version": "0.12.2",
   "private": true,
   "packageManager": "pnpm@11.24.0",
   "engines": {
@@ -9,7 +9,8 @@
   "scripts": {
     "build": "pnpm -r build",
     "check": "pnpm --filter @moneymoves/contracts build && pnpm -r check && cargo fmt --all --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace",
-    "test": "pnpm -r test && cargo test --workspace",
+    "test": "pnpm -r test && pnpm test:installer && cargo test --workspace",
+    "test:installer": "node --test scripts/update-uxp-registry.test.mjs",
     "format": "prettier --write . && cargo fmt --all",
     "format:check": "prettier --check . && cargo fmt --all --check",
     "dev:panel": "pnpm --filter @moneymoves/panel dev",
