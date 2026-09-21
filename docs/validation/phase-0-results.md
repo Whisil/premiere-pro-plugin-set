@@ -19,6 +19,38 @@ Environment audit on 2026-09-19:
 | RGB Shift Metal + CPU fallback | pending | Bundle builds, signs, installs, and exports both entry points; host comparison remains |
 | ProRes 4444 alpha round trip   | pending | Verified ten-frame input artifact exists; Premiere/AME round trip remains              |
 
+## Production installation evidence
+
+Validated on 2026-09-21 against Premiere Pro 25.6.4:
+
+- Panel release: `MoneyMoves-Toolkit-0.12.2.ccx`, commit `6bb02a3` plus
+  scaled-icon fix `41bb0d8`.
+- Adobe production install:
+  `/Library/Application Support/Adobe/UXP/Plugins/External/com.moneymoves.premiere-toolkit_0.12.2`.
+- The installed directory matched the verified CCX contents exactly.
+- The system registry used
+  `$systemPlugins/External/com.moneymoves.premiere-toolkit_0.12.2` and marked
+  the plug-in enabled.
+- Premiere's `UXPLogs_2026-09-21_20-05-41_973143.log` recorded the MoneyMoves
+  ID and `Number of plugins added from system's pluginsInfo: 1`, with no
+  MoneyMoves initialization, script, or icon error.
+- Fresh external-plugin storage was created at 20:05:42 and updated at
+  20:07:06. Its persisted values included the Effects view, MoneyMoves Core
+  palette, and RGB Shift selection, proving that panel code executed and saved
+  state during the host session.
+- Premiere's native `Plugin Loading.log` discovered all 12 installed
+  MoneyMoves bundles. Cached bundles reported successful registry loads; the
+  newly installed ASCII, CRT, and Progressive Blur bundles were recognized by
+  both Adobe loaders. No MoneyMoves load failure was present.
+- All installed MoneyMoves executables passed strict ad-hoc signature checks
+  and were arm64 Mach-O binaries.
+- The authenticated localhost renderer returned `status: ok` after the host
+  session.
+
+This passes production installation and panel-startup validation without UXP
+Developer Tool. It does not substitute for the pending host undo, GPU/software
+image comparison, visual acceptance, performance, or AME round-trip gates.
+
 ## Automated feasibility evidence
 
 ### Native host adapter

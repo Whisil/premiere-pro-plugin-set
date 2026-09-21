@@ -56,6 +56,9 @@ tooling outside Premiere.
 - Restored Generate workspace for local FIGlet ASCII title rendering,
   cancellation, active-sequence matching, and automatic Premiere import.
 - Standalone CCX release packaging for normal installation without UXP Developer Tool.
+- Production 0.12.2 offline installation validated in Premiere 25.6.4: Adobe
+  initialized the panel, the panel executed and persisted state, all 12 native
+  bundles were discovered, and the renderer was healthy.
 - Reproducible ten-frame ProRes 4444 alpha feasibility artifact.
 
 ## Phase 0 gates
