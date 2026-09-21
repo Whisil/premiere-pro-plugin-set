@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.1 - Unreleased
+
+- Ship explicit `@1x` panel and plugin-list icons so Premiere does not report a
+  missing scaled icon when loading the production UXP package.
+- Reject panel packages that omit any required 1× or 2× icon asset.
+
 ## 0.12.0 - Unreleased
 
 - Add a double-click offline installer that packages, verifies, backs up, and

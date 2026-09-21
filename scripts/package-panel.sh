@@ -24,6 +24,13 @@ test -f "$dist_dir/manifest.json"
 test -f "$dist_dir/index.html"
 test -d "$dist_dir/assets"
 
+for icon in plugin@1x.png plugin@2x.png panel@1x.png panel@2x.png; do
+  if [[ ! -f "$dist_dir/icons/$icon" ]]; then
+    echo "Panel package is missing required scaled icon: icons/$icon" >&2
+    exit 1
+  fi
+done
+
 html_file="$dist_dir/index.html"
 grep_bin="/usr/bin/grep"
 
