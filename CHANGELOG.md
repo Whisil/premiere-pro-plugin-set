@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.13.0 - Unreleased
+
+- Recognize selected Premiere video-clip host proxies through their documented
+  media type instead of relying on JavaScript `instanceof` identity.
+- Create all effect mutation actions inside Premiere's required locked,
+  undoable transaction scope so Apply, Remove, presets, parameters, and
+  keyframes can execute in the production host.
+- Replace the oversized card list with a searchable compact effect library and
+  a focused inspector, explicit Apply/Remove actions, selection refresh, and a
+  responsive docked/floating layout.
+- Add regression coverage for host-proxy selection and invalid out-of-scope
+  Premiere action creation.
+
 ## 0.12.2 - Unreleased
 
 - Restore Adobe's `$systemPlugins` registry token in the offline installer so

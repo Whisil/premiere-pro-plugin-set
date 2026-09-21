@@ -59,6 +59,9 @@ tooling outside Premiere.
 - Production 0.12.2 offline installation validated in Premiere 25.6.4: Adobe
   initialized the panel, the panel executed and persisted state, all 12 native
   bundles were discovered, and the renderer was healthy.
+- Panel 0.13.0 corrects production host-proxy selection and transaction scope,
+  and replaces the effect-card wall with a searchable library and focused
+  inspector. Premiere 25.6.4 apply/remove validation remains the next host gate.
 - Reproducible ten-frame ProRes 4444 alpha feasibility artifact.
 
 ## Phase 0 gates

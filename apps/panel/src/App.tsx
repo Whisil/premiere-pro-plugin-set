@@ -272,6 +272,7 @@ export function App() {
   const [selectedMatchName, setSelectedMatchName] = useState(
     storedEffectMatchName,
   );
+  const [effectQuery, setEffectQuery] = useState("");
   const [installedMatchNames, setInstalledMatchNames] = useState<string[]>([]);
   const [selection, setSelection] = useState<SelectionSummary>();
   const [effectStates, setEffectStates] = useState<
@@ -296,6 +297,15 @@ export function App() {
     : undefined;
   const selectedIsOn =
     selectedState?.state === "all" || selectedState?.state === "some";
+  const filteredEffects = useMemo(() => {
+    const query = effectQuery.trim().toLowerCase();
+    if (!query) return installedEffects;
+    return installedEffects.filter((effect) =>
+      `${effect.name} ${effect.category} ${effect.description}`
+        .toLowerCase()
+        .includes(query),
+    );
+  }, [effectQuery, installedEffects]);
 
   useEffect(() => {
     if (selectedEffect) persistEffectMatchName(selectedEffect.matchName);
@@ -331,6 +341,7 @@ export function App() {
 
   useEffect(() => {
     let cancelled = false;
+    let lastSelectionSignature = "";
     async function refresh(): Promise<void> {
       try {
         const [nextSelection, installed] = await Promise.all([
@@ -339,6 +350,9 @@ export function App() {
         ]);
         if (cancelled) return;
         setSelection(nextSelection);
+        lastSelectionSignature = nextSelection
+          ? `${nextSelection.selectedItems}:${nextSelection.videoClips}:${nextSelection.nonVideoItems}`
+          : "unavailable";
         setInstalledMatchNames(installed);
         const visible = EFFECT_REGISTRY.filter((effect) => {
           if (effect.status !== "available") return false;
@@ -384,8 +398,19 @@ export function App() {
         else unsubscribe = nextUnsubscribe;
       },
     );
+    const pollSelection = window.setInterval(() => {
+      void getSelectionSummary()
+        .then((nextSelection) => {
+          if (cancelled) return;
+          const signature = `${nextSelection.selectedItems}:${nextSelection.videoClips}:${nextSelection.nonVideoItems}`;
+          if (signature !== lastSelectionSignature) void refresh();
+          else setSelection(nextSelection);
+        })
+        .catch(() => undefined);
+    }, 1200);
     return () => {
       cancelled = true;
+      window.clearInterval(pollSelection);
       unsubscribe();
     };
   }, []);
@@ -447,12 +472,7 @@ export function App() {
   }
 
   function chooseEffect(effect: EffectDefinition): void {
-    const state = effectStates[effect.matchName];
-    if (state?.state === "all" || state?.state === "some") {
-      setSelectedMatchName(effect.matchName);
-      return;
-    }
-    applyNamed(effect);
+    setSelectedMatchName(effect.matchName);
   }
 
   function removeSelected(effect: EffectDefinition): void {
@@ -519,13 +539,30 @@ export function App() {
           <p className="eyebrow">MONEYMOVES</p>
           <h1>{view === "effects" ? "Effects" : "Generate"}</h1>
         </div>
-        <p className="selection-state">
-          {view === "effects"
-            ? selectionCopy(selection)
-            : rendererOnline
-              ? "Renderer online"
-              : "Renderer offline"}
-        </p>
+        {view === "effects" ? (
+          <button
+            className={
+              selection?.videoClips ? "selection-pill ready" : "selection-pill"
+            }
+            disabled={busy}
+            onClick={() =>
+              void run(async () => {
+                await refreshStates();
+                setNotice({ tone: "info", message: "" });
+              })
+            }
+            title="Refresh timeline selection"
+            type="button"
+          >
+            <span className="selection-dot" />
+            {selectionCopy(selection)}
+            <span className="refresh-symbol">↻</span>
+          </button>
+        ) : (
+          <p className="selection-state">
+            {rendererOnline ? "Renderer online" : "Renderer offline"}
+          </p>
+        )}
       </header>
 
       <nav className="workspace-nav" aria-label="MoneyMoves workspace">
@@ -550,119 +587,196 @@ export function App() {
       ) : null}
 
       {view === "effects" ? (
-        <>
+        <section className="effects-workspace">
           {installedEffects.length === 0 ? (
             <p className="empty-state">
               No MoneyMoves effects are listed yet. Open a Premiere project,
               then try Apply on a selected clip.
             </p>
           ) : (
-            <div className="effect-list">
-              {installedEffects.map((effect) => {
-                const state = effectStates[effect.matchName];
-                const isSelected =
-                  effect.matchName === selectedEffect?.matchName;
-                const isOn = state?.state === "all" || state?.state === "some";
-                return (
-                  <article
-                    className={
-                      isSelected ? "effect-card selected" : "effect-card"
-                    }
-                    key={effect.matchName}
-                  >
-                    <div className="effect-row">
+            <>
+              <div className="effect-search">
+                <span aria-hidden="true">⌕</span>
+                <input
+                  aria-label="Search effects"
+                  placeholder="Search effects"
+                  type="search"
+                  value={effectQuery}
+                  onChange={(event) => setEffectQuery(event.target.value)}
+                />
+                <span className="effect-count">{filteredEffects.length}</span>
+              </div>
+
+              {!selection?.videoClips ? (
+                <div className="selection-help">
+                  <span className="selection-help-icon">1</span>
+                  <div>
+                    <strong>Select one or more video clips</strong>
+                    <p>
+                      Choose clips in the timeline, then press refresh if the
+                      panel does not update immediately.
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="effect-layout">
+                <aside className="effect-browser" aria-label="Effect library">
+                  {filteredEffects.map((effect) => {
+                    const state = effectStates[effect.matchName];
+                    const isSelected =
+                      effect.matchName === selectedEffect?.matchName;
+                    const isOn =
+                      state?.state === "all" || state?.state === "some";
+                    return (
                       <button
-                        className="effect-name"
+                        className={
+                          isSelected
+                            ? "effect-list-item selected"
+                            : "effect-list-item"
+                        }
                         disabled={busy}
                         onClick={() => chooseEffect(effect)}
+                        key={effect.matchName}
                         type="button"
                       >
-                        <span>{effect.name}</span>
-                        <span className={isOn ? "status on" : "status off"}>
+                        <span className={isOn ? "state-dot on" : "state-dot"} />
+                        <span className="effect-list-copy">
+                          <strong>{effect.name}</strong>
+                          <small>{effect.category}</small>
+                        </span>
+                        <span
+                          className={isOn ? "mini-status on" : "mini-status"}
+                        >
                           {appliedCopy(state)}
                         </span>
                       </button>
-                      {isOn ? (
+                    );
+                  })}
+                  {filteredEffects.length === 0 ? (
+                    <p className="no-results">No matching effects.</p>
+                  ) : null}
+                </aside>
+
+                {selectedEffect ? (
+                  <article className="effect-inspector">
+                    <header className="inspector-heading">
+                      <div>
+                        <span className="category-label">
+                          {selectedEffect.category}
+                        </span>
+                        <h2>{selectedEffect.name}</h2>
+                        <p>{selectedEffect.description}</p>
+                      </div>
+                      <span
+                        className={
+                          selectedIsOn ? "status-chip on" : "status-chip"
+                        }
+                      >
+                        {appliedCopy(selectedState)}
+                      </span>
+                    </header>
+
+                    <div className="inspector-actions">
+                      {selectedIsOn ? (
                         <button
-                          className="quiet"
+                          className="button-danger"
                           disabled={busy}
-                          onClick={() => removeSelected(effect)}
+                          onClick={() => removeSelected(selectedEffect)}
                           type="button"
                         >
-                          Remove
+                          Remove from selection
                         </button>
-                      ) : null}
-                      {state?.state === "some" || !isOn ? (
+                      ) : (
                         <button
+                          className="button-primary"
                           disabled={busy || !selection?.videoClips}
-                          onClick={() => applyNamed(effect)}
+                          onClick={() => applyNamed(selectedEffect)}
                           type="button"
                         >
-                          Apply
+                          Apply to {selection?.videoClips ?? 0} clip
+                          {selection?.videoClips === 1 ? "" : "s"}
+                        </button>
+                      )}
+                      {selectedState?.state === "some" ? (
+                        <button
+                          className="button-secondary"
+                          disabled={busy}
+                          onClick={() => applyNamed(selectedEffect)}
+                          type="button"
+                        >
+                          Apply to missing clips
                         </button>
                       ) : null}
                     </div>
 
-                    {isSelected && isOn && effect.parameters.length > 0 ? (
+                    {selectedIsOn && selectedEffect.parameters.length > 0 ? (
                       <div className="effect-editor">
-                        {effect.presets.length > 0 ? (
-                          <div className="preset-row">
-                            {effect.presets.map((preset) => (
-                              <button
-                                className="quiet"
-                                disabled={busy}
-                                key={preset.id}
-                                onClick={() =>
-                                  void run(async () => {
-                                    await applyEffectPreset(preset);
-                                    await refreshStates();
-                                    setNotice({
-                                      tone: "success",
-                                      message: `${preset.name} applied.`,
-                                    });
-                                  })
-                                }
-                                type="button"
-                              >
-                                {preset.name}
-                              </button>
-                            ))}
-                          </div>
+                        {selectedEffect.presets.length > 0 ? (
+                          <section className="inspector-section">
+                            <h3>Presets</h3>
+                            <div className="preset-row">
+                              {selectedEffect.presets.map((preset) => (
+                                <button
+                                  className="preset-button"
+                                  disabled={busy}
+                                  key={preset.id}
+                                  onClick={() =>
+                                    void run(async () => {
+                                      await applyEffectPreset(preset);
+                                      await refreshStates();
+                                      setNotice({
+                                        tone: "success",
+                                        message: `${preset.name} applied.`,
+                                      });
+                                    })
+                                  }
+                                  type="button"
+                                >
+                                  {preset.name}
+                                </button>
+                              ))}
+                            </div>
+                          </section>
                         ) : null}
-                        {effect.parameters.map((parameter) => (
-                          <EffectParameterControl
-                            definition={effect}
-                            disabled={busy}
-                            effectState={state}
-                            key={parameter.key}
-                            parameter={parameter}
-                            onSetValue={(nextParameter, value) =>
-                              void run(async () => {
-                                await setEffectParameter(
-                                  effect,
-                                  nextParameter,
-                                  value,
-                                );
-                                await refreshStates();
-                                setNotice({ tone: "info", message: "" });
-                              })
-                            }
-                          />
-                        ))}
+                        <section className="inspector-section">
+                          <h3>Controls</h3>
+                          {selectedEffect.parameters.map((parameter) => (
+                            <EffectParameterControl
+                              definition={selectedEffect}
+                              disabled={busy}
+                              effectState={selectedState}
+                              key={parameter.key}
+                              parameter={parameter}
+                              onSetValue={(nextParameter, value) =>
+                                void run(async () => {
+                                  await setEffectParameter(
+                                    selectedEffect,
+                                    nextParameter,
+                                    value,
+                                  );
+                                  await refreshStates();
+                                  setNotice({ tone: "info", message: "" });
+                                })
+                              }
+                            />
+                          ))}
+                        </section>
                       </div>
-                    ) : null}
+                    ) : (
+                      <div className="inspector-empty">
+                        <span aria-hidden="true">＋</span>
+                        <p>
+                          Apply this effect to unlock its presets and controls.
+                        </p>
+                      </div>
+                    )}
                   </article>
-                );
-              })}
-            </div>
+                ) : null}
+              </div>
+            </>
           )}
-
-          {selectedEffect && !selectedIsOn && selection?.videoClips ? (
-            <p className="hint">
-              Click an effect to put it on the selected clips.
-            </p>
-          ) : null}
-        </>
+        </section>
       ) : (
         <div className="generate-workspace">
           <section className="generator-card">
