@@ -62,6 +62,9 @@ tooling outside Premiere.
 - Panel 0.13.0 corrects production host-proxy selection and transaction scope,
   and replaces the effect-card wall with a searchable library and focused
   inspector. Premiere 25.6.4 apply/remove validation remains the next host gate.
+- Panel 0.14.0 adds playhead-aware animation controls, keyframe navigation,
+  and Linear/Hold/Bezier interpolation to the focused inspector. Premiere
+  25.6.4 host validation remains required before marking the workflow done.
 - Reproducible ten-frame ProRes 4444 alpha feasibility artifact.
 
 ## Phase 0 gates

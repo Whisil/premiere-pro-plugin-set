@@ -16,11 +16,16 @@ import {
   getSelectionSummary,
   importGeneratedFile,
   inspectEffectSelection,
+  navigateKeyframe,
   removeEffect,
   setEffectParameter,
+  setKeyframeInterpolation,
+  setParameterTimeVarying,
   subscribeToSelectionChanges,
+  toggleKeyframeAtPlayhead,
   type EffectParameterState,
   type EffectSelectionState,
+  type KeyframeInterpolation,
   type SelectionSummary,
 } from "./premiere.js";
 import {
@@ -119,6 +124,19 @@ interface EffectParameterControlProps {
     parameter: EffectParameterDefinition,
     value: string | number | boolean,
   ) => void;
+  onToggleAnimation: (
+    parameter: EffectParameterDefinition,
+    enabled: boolean,
+  ) => void;
+  onToggleKeyframe: (parameter: EffectParameterDefinition) => void;
+  onNavigateKeyframe: (
+    parameter: EffectParameterDefinition,
+    direction: "previous" | "next",
+  ) => void;
+  onSetInterpolation: (
+    parameter: EffectParameterDefinition,
+    interpolation: KeyframeInterpolation,
+  ) => void;
 }
 
 function EffectParameterControl({
@@ -127,6 +145,10 @@ function EffectParameterControl({
   effectState,
   disabled,
   onSetValue,
+  onToggleAnimation,
+  onToggleKeyframe,
+  onNavigateKeyframe,
+  onSetInterpolation,
 }: EffectParameterControlProps) {
   const state = parameterState(effectState, parameter);
   const value = displayValue(parameter, state);
@@ -138,7 +160,7 @@ function EffectParameterControl({
   }
 
   return (
-    <label className="parameter">
+    <div className="parameter">
       <span className="parameter-label">
         {parameter.label}
         {mixed ? <span className="mixed">Mixed</span> : null}
@@ -240,7 +262,76 @@ function EffectParameterControl({
           )}
         </span>
       )}
-    </label>
+
+      {parameter.keyframeable && state ? (
+        <span className="keyframe-row">
+          <button
+            className={
+              state.timeVarying ? "animate-button active" : "animate-button"
+            }
+            disabled={controlDisabled}
+            onClick={() => onToggleAnimation(parameter, !state.timeVarying)}
+            title={
+              state.timeVarying
+                ? "Stop animating this parameter"
+                : "Enable animation for this parameter"
+            }
+            type="button"
+          >
+            <span aria-hidden="true">{state.timeVarying ? "◆" : "◇"}</span>
+            {state.timeVarying ? "Animated" : "Animate"}
+          </button>
+          {state.timeVarying ? (
+            <>
+              <button
+                className="keyframe-button"
+                disabled={controlDisabled || state.keyframeCount === 0}
+                onClick={() => onNavigateKeyframe(parameter, "previous")}
+                title="Go to previous keyframe"
+                type="button"
+              >
+                ‹
+              </button>
+              <button
+                className="keyframe-button keyframe-toggle"
+                disabled={controlDisabled}
+                onClick={() => onToggleKeyframe(parameter)}
+                title="Add or remove a keyframe at the playhead"
+                type="button"
+              >
+                ◆ {state.keyframeCount}
+              </button>
+              <button
+                className="keyframe-button"
+                disabled={controlDisabled || state.keyframeCount === 0}
+                onClick={() => onNavigateKeyframe(parameter, "next")}
+                title="Go to next keyframe"
+                type="button"
+              >
+                ›
+              </button>
+              <select
+                aria-label={`${parameter.label} keyframe interpolation`}
+                className="interpolation-select"
+                defaultValue="linear"
+                disabled={controlDisabled || state.keyframeCount === 0}
+                onChange={(event) =>
+                  onSetInterpolation(
+                    parameter,
+                    event.target.value as KeyframeInterpolation,
+                  )
+                }
+                title="Interpolation at the current keyframe"
+              >
+                <option value="linear">Linear</option>
+                <option value="hold">Hold</option>
+                <option value="bezier">Bezier</option>
+              </select>
+            </>
+          ) : null}
+        </span>
+      ) : null}
+    </div>
   );
 }
 
@@ -757,6 +848,66 @@ export function App() {
                                   );
                                   await refreshStates();
                                   setNotice({ tone: "info", message: "" });
+                                })
+                              }
+                              onToggleAnimation={(nextParameter, enabled) =>
+                                void run(async () => {
+                                  await setParameterTimeVarying(
+                                    selectedEffect,
+                                    nextParameter,
+                                    enabled,
+                                  );
+                                  await refreshStates();
+                                  setNotice({
+                                    tone: "success",
+                                    message: enabled
+                                      ? `${nextParameter.label} animation enabled.`
+                                      : `${nextParameter.label} animation disabled.`,
+                                  });
+                                })
+                              }
+                              onToggleKeyframe={(nextParameter) =>
+                                void run(async () => {
+                                  const result = await toggleKeyframeAtPlayhead(
+                                    selectedEffect,
+                                    nextParameter,
+                                  );
+                                  await refreshStates();
+                                  setNotice({
+                                    tone: "success",
+                                    message: `${nextParameter.label} keyframe ${result}.`,
+                                  });
+                                })
+                              }
+                              onNavigateKeyframe={(nextParameter, direction) =>
+                                void run(async () => {
+                                  const moved = await navigateKeyframe(
+                                    selectedEffect,
+                                    nextParameter,
+                                    direction,
+                                  );
+                                  setNotice({
+                                    tone: moved ? "info" : "error",
+                                    message: moved
+                                      ? ""
+                                      : `No ${direction} ${nextParameter.label} keyframe.`,
+                                  });
+                                })
+                              }
+                              onSetInterpolation={(
+                                nextParameter,
+                                interpolation,
+                              ) =>
+                                void run(async () => {
+                                  await setKeyframeInterpolation(
+                                    selectedEffect,
+                                    nextParameter,
+                                    interpolation,
+                                  );
+                                  setNotice({
+                                    tone: "success",
+                                    message: `${nextParameter.label} keyframe set to ${interpolation}.`,
+                                  });
                                 })
                               }
                             />

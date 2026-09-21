@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.14.0 - Unreleased
+
+- Add compact animation and keyframe controls to every supported effect
+  parameter in the focused Effects inspector.
+- Support animation enable/disable, add/remove at the playhead, previous/next
+  navigation, keyframe counts, and Linear/Hold/Bezier interpolation.
+- Position new keyframes at the active sequence playhead and enable animation
+  in the same undo transaction when the first keyframe is created.
+
 ## 0.13.0 - Unreleased
 
 - Recognize selected Premiere video-clip host proxies through their documented

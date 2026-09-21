@@ -614,6 +614,58 @@ input[type="color"] {
   background: #e1b91f;
 }
 
+.keyframe-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #343439;
+}
+
+.animate-button,
+.keyframe-button {
+  min-height: 24px;
+  padding: 3px 7px;
+  color: #aaa9af;
+  border-color: #414147;
+  background: #242428;
+  font-size: 9px;
+}
+
+.animate-button {
+  margin-right: auto;
+}
+
+.animate-button span {
+  margin-right: 4px;
+  color: #77777f;
+}
+
+.animate-button.active {
+  color: #f4f1e8;
+  border-color: #665b2e;
+  background: #332f20;
+}
+
+.animate-button.active span,
+.keyframe-toggle {
+  color: #ffcc28;
+}
+
+.keyframe-button {
+  min-width: 26px;
+}
+
+.interpolation-select {
+  width: auto;
+  min-width: 70px;
+  padding: 4px 20px 4px 6px;
+  color: #c5c5d0;
+  font-size: 9px;
+}
+
 .generate-workspace {
   display: flex;
   flex-direction: column;
