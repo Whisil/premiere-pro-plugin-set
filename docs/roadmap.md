@@ -71,6 +71,9 @@ tooling outside Premiere.
 - Panel 0.14.2 reports native-effect discovery honestly: an empty match-name
   list no longer makes every effect appear applicable. This build also needs
   Premiere-host confirmation before Phase 0 can pass.
+- Panel 0.15.0 adds an in-panel Diagnostics view for host/UXP versions,
+  installed native match names, renderer status, and outstanding validation
+  gates. It supersedes 0.14.2 as the next standalone installation candidate.
 - Reproducible ten-frame ProRes 4444 alpha feasibility artifact.
 
 ## Phase 0 gates

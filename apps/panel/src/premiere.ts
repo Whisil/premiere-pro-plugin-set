@@ -1,4 +1,5 @@
 import {
+  EFFECT_REGISTRY,
   getEffectDefinition,
   type EffectDefinition,
   type EffectParameterDefinition,
@@ -737,7 +738,7 @@ export async function hostDiagnostics(): Promise<Record<string, string>> {
       host: "Premiere Pro",
       project: project?.name ?? "No active project",
       sequence: sequence?.name ?? "No active sequence",
-      nativeEffects: `${moneyMovesEffects.length}/15`,
+      nativeEffects: `${moneyMovesEffects.length}/${EFFECT_REGISTRY.filter((effect) => effect.status === "available").length}`,
       installedEffects: moneyMovesEffects.join(", ") || "None detected",
       api: "Available",
     };

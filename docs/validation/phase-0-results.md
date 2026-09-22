@@ -37,6 +37,13 @@ Environment audit on 2026-09-19:
   formatting, package integrity, and checksum verification. Host visual and
   effect-application results remain **pending** until the running Premiere
   session is closed and this build is installed and reopened.
+- Panel 0.15.0 supersedes 0.14.2 as the next installation candidate and adds
+  a Diagnostics view for inspecting native match names and host status inside
+  Premiere. No visual or apply/remove result is inferred from this source
+  change; the replacement build still requires a closed-host installation.
+- The standalone `MoneyMoves-Toolkit-0.15.0.ccx` archive passed TypeScript,
+  30 panel tests, formatting, ZIP integrity, and SHA-256 verification
+  (`8683bf127b5ab8c9cfef7c4d339b89b5f201331f67178dfd1e8c15cbdae37337`).
 
 ### Panel 0.14.0 installation — 2026-09-21
 

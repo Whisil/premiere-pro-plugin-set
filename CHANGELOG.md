@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.15.0 - Unreleased
+
+- Add a dedicated Diagnostics view in the panel with UXP, host, panel,
+  project, sequence, native-effect, and local-renderer status.
+- Expose detected native match names and outstanding Phase 0 host checks so
+  installation and effect-application failures can be diagnosed in Premiere.
+
 ## 0.14.2 - Unreleased
 
 - Show the effect library without pretending that registered effects are

@@ -14,6 +14,7 @@ import {
   getActiveSequenceFormat,
   getInstalledMoneyMovesEffects,
   getSelectionSummary,
+  hostDiagnostics,
   importGeneratedFile,
   inspectEffectSelection,
   navigateKeyframe,
@@ -41,9 +42,10 @@ import {
   isNativeEffectAvailable,
   selectedVisibleEffect,
 } from "./effect-browser.js";
+import { getRuntimeInfo } from "./runtime-info.js";
 
 type Notice = { tone: "info" | "success" | "error"; message: string };
-type PanelView = "effects" | "generate";
+type PanelView = "effects" | "generate" | "diagnostics";
 
 const PANEL_EFFECT_KEY = "moneymoves.panel.effect";
 const PANEL_VIEW_KEY = "moneymoves.panel.view";
@@ -55,6 +57,11 @@ function storedValue(key: string, fallback: string): string {
   } catch {
     return fallback;
   }
+}
+
+function storedPanelView(): PanelView {
+  const value = storedValue(PANEL_VIEW_KEY, "effects");
+  return value === "generate" || value === "diagnostics" ? value : "effects";
 }
 
 function storedEffectMatchName(): string {
@@ -341,14 +348,13 @@ function EffectParameterControl({
 }
 
 export function App() {
+  const runtimeInfo = useMemo(() => getRuntimeInfo(), []);
   const [notice, setNotice] = useState<Notice>({
     tone: "info",
     message: "",
   });
   const [busy, setBusy] = useState(false);
-  const [view, setView] = useState<PanelView>(
-    () => storedValue(PANEL_VIEW_KEY, "effects") as PanelView,
-  );
+  const [view, setView] = useState<PanelView>(storedPanelView);
   const [rendererOnline, setRendererOnline] = useState(false);
   const [jobs, setJobs] = useState<RenderJob[]>([]);
   const [asciiText, setAsciiText] = useState("MONEY MOVES");
@@ -373,6 +379,7 @@ export function App() {
   const [nativeDetection, setNativeDetection] = useState<
     "checking" | "ready" | "error"
   >("checking");
+  const [diagnostics, setDiagnostics] = useState<Record<string, string>>({});
   const [selection, setSelection] = useState<SelectionSummary>();
   const [effectStates, setEffectStates] = useState<
     Record<string, EffectSelectionState>
@@ -425,6 +432,9 @@ export function App() {
         setSequenceName(format.name);
       })
       .catch(() => undefined);
+    void hostDiagnostics().then((details) => {
+      if (!cancelled) setDiagnostics(details);
+    });
     return () => {
       cancelled = true;
     };
@@ -601,6 +611,23 @@ export function App() {
     });
   }
 
+  async function refreshDiagnostics(): Promise<void> {
+    try {
+      const [installed, details, online] = await Promise.all([
+        getInstalledMoneyMovesEffects(),
+        hostDiagnostics(),
+        rendererHealth(),
+      ]);
+      setInstalledMatchNames(installed);
+      setNativeDetection("ready");
+      setDiagnostics(details);
+      setRendererOnline(online);
+    } catch (error) {
+      setNativeDetection("error");
+      throw error;
+    }
+  }
+
   async function renderAsciiTitle(): Promise<void> {
     const created = await submitRenderJob({
       schemaVersion: SCHEMA_VERSION,
@@ -640,7 +667,13 @@ export function App() {
       <header className="masthead">
         <div>
           <p className="eyebrow">MONEYMOVES</p>
-          <h1>{view === "effects" ? "Effects" : "Generate"}</h1>
+          <h1>
+            {view === "effects"
+              ? "Effects"
+              : view === "generate"
+                ? "Generate"
+                : "Diagnostics"}
+          </h1>
         </div>
         {view === "effects" ? (
           <div className="selection-tools">
@@ -694,6 +727,14 @@ export function App() {
           type="button"
         >
           Generate
+        </button>
+        <button
+          className={view === "diagnostics" ? "active" : "quiet"}
+          uxp-variant="action"
+          onClick={() => setView("diagnostics")}
+          type="button"
+        >
+          Diagnostics
         </button>
       </nav>
 
@@ -1013,7 +1054,7 @@ export function App() {
             </>
           )}
         </section>
-      ) : (
+      ) : view === "generate" ? (
         <div className="generate-workspace">
           <section className="generator-card">
             <div className="section-heading">
@@ -1209,6 +1250,89 @@ export function App() {
               ))}
             </section>
           ) : null}
+        </div>
+      ) : (
+        <div className="diagnostics-workspace">
+          <section className="generator-card">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">HOST STATUS</p>
+                <h2>Installation health</h2>
+              </div>
+              <button
+                className="quiet"
+                disabled={busy}
+                onClick={() => void run(refreshDiagnostics)}
+                type="button"
+              >
+                Refresh
+              </button>
+            </div>
+            <div className="diagnostic-row">
+              <span>Panel</span>
+              <strong>{runtimeInfo.panelVersion}</strong>
+            </div>
+            <div className="diagnostic-row">
+              <span>Host</span>
+              <strong>{runtimeInfo.host}</strong>
+            </div>
+            <div className="diagnostic-row">
+              <span>UXP</span>
+              <strong>{runtimeInfo.uxpVersion}</strong>
+            </div>
+            <div className="diagnostic-row">
+              <span>Platform</span>
+              <strong>{runtimeInfo.platform}</strong>
+            </div>
+            <div className="diagnostic-row">
+              <span>Project</span>
+              <strong>{diagnostics.project ?? "Checking…"}</strong>
+            </div>
+            <div className="diagnostic-row">
+              <span>Sequence</span>
+              <strong>{diagnostics.sequence ?? "Checking…"}</strong>
+            </div>
+            <div className="diagnostic-row">
+              <span>Native effects</span>
+              <strong>
+                {nativeDetection === "checking"
+                  ? "Checking…"
+                  : nativeDetection === "error"
+                    ? "Detection failed"
+                    : `${installedMatchNames.length}/${listedEffects.length} detected`}
+              </strong>
+            </div>
+            <div className="diagnostic-row">
+              <span>Local renderer</span>
+              <strong>{rendererOnline ? "Online" : "Offline"}</strong>
+            </div>
+            {nativeDetection === "ready" &&
+            installedMatchNames.length < listedEffects.length ? (
+              <p className="diagnostic-warning">
+                Some native effects are missing. Reinstall the MoneyMoves
+                bundles and restart Premiere before applying them.
+              </p>
+            ) : null}
+          </section>
+          <section className="generator-card">
+            <p className="eyebrow">DETECTED EFFECTS</p>
+            {installedMatchNames.length > 0 ? (
+              <p className="diagnostic-names">
+                {installedMatchNames.join(" · ")}
+              </p>
+            ) : (
+              <p className="hint">No native match names reported yet.</p>
+            )}
+          </section>
+          <section className="generator-card">
+            <p className="eyebrow">PHASE 0 HOST CHECKS</p>
+            <p className="hint">
+              Still to verify in Premiere: one-step Undo for a 20-clip apply and
+              removal, CPU/Metal image agreement, and transparent ProRes import
+              through AME export. Automated tests do not close these host
+              checks.
+            </p>
+          </section>
         </div>
       )}
     </main>

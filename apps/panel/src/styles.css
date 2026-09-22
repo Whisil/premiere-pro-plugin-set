@@ -699,9 +699,42 @@ input[type="color"] {
   font-size: 9px;
 }
 
-.generate-workspace {
+.generate-workspace,
+.diagnostics-workspace {
   display: flex;
   flex-direction: column;
+}
+
+.diagnostic-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 7px 0;
+  border-bottom: 1px solid #34343a;
+  font-size: 11px;
+}
+
+.diagnostic-row span {
+  margin-right: 12px;
+  color: #96959d;
+}
+
+.diagnostic-row strong {
+  min-width: 0;
+  color: #e7e5de;
+  text-align: right;
+}
+
+.diagnostic-warning {
+  margin: 10px 0 0;
+  color: #e4aea2;
+  font-size: 11px;
+}
+
+.diagnostic-names {
+  color: #aaa9af;
+  font-family: Menlo, monospace;
+  font-size: 10px;
+  line-height: 1.5;
 }
 
 .generator-card {

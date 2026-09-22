@@ -22,4 +22,18 @@ describe("effect workspace", () => {
     expect(markup).toMatch(/<span class="selection-pill"/);
     expect(markup).toMatch(/<button[^>]*class="selection-refresh"/);
   });
+
+  it("opens the persisted Diagnostics view with honest pending host checks", () => {
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) =>
+        key === "moneymoves.panel.view" ? "diagnostics" : null,
+    });
+
+    const markup = renderToStaticMarkup(<App />);
+
+    expect(markup).toContain("Installation health");
+    expect(markup).toContain("Native effects");
+    expect(markup).toContain("Checking");
+    expect(markup).toContain("Automated tests do not close these host checks");
+  });
 });
