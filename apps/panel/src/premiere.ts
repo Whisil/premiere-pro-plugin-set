@@ -143,6 +143,41 @@ function guidString(value: unknown): string | undefined {
   }
 }
 
+function hostMatchName(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
+  if (value && typeof value === "object" && "matchName" in value) {
+    return String((value as { matchName: unknown }).matchName);
+  }
+  return undefined;
+}
+
+export function canonicalMoneyMovesMatchName(
+  hostName: string,
+): string | undefined {
+  const canonical =
+    hostName.startsWith("AE.") || hostName.startsWith("PR.")
+      ? hostName.slice(3)
+      : hostName;
+  return canonical.startsWith("com.moneymoves.") ? canonical : undefined;
+}
+
+async function factoryMatchName(ppro: any, canonical: string): Promise<string> {
+  const factory = ppro.VideoFilterFactory;
+  if (typeof factory?.getMatchNames !== "function") return canonical;
+  const names = await factory.getMatchNames();
+  const found = (Array.isArray(names) ? names : [])
+    .map(hostMatchName)
+    .find((name): name is string =>
+      Boolean(name && canonicalMoneyMovesMatchName(name) === canonical),
+    );
+  if (!found) {
+    throw new Error(
+      `${canonical} is not registered as a video effect in Premiere. Reinstall the native bundles and restart Premiere.`,
+    );
+  }
+  return found;
+}
+
 async function isVideoClip(ppro: any, item: any): Promise<boolean> {
   const videoMediaType = ppro.Constants?.MediaType?.VIDEO;
   if (
@@ -186,7 +221,11 @@ async function findComponent(
 ): Promise<any | undefined> {
   for (let index = chain.getComponentCount() - 1; index >= 0; index -= 1) {
     const component = chain.getComponentAtIndex(index);
-    if ((await component.getMatchName()) === matchName) return component;
+    if (
+      canonicalMoneyMovesMatchName(await component.getMatchName()) === matchName
+    ) {
+      return component;
+    }
   }
   return undefined;
 }
@@ -436,13 +475,15 @@ export async function applyEffectPreset(preset: EffectPreset): Promise<number> {
     throw new Error(`${definition.name} is not installed yet.`);
   }
 
+  const actualMatchName = await factoryMatchName(ppro, preset.matchName);
+
   const prepared = await Promise.all(
     clips.map(async (clip) => {
       const chain = await clip.getComponentChain();
       const existing = await findComponent(chain, preset.matchName);
       const component =
         existing ??
-        (await ppro.VideoFilterFactory.createComponent(preset.matchName));
+        (await ppro.VideoFilterFactory.createComponent(actualMatchName));
       return { clip, chain, component, existing };
     }),
   );
@@ -757,13 +798,13 @@ export async function getInstalledMoneyMovesEffects(): Promise<string[]> {
   if (!factory || typeof factory.getMatchNames !== "function") return [];
   const availableEffects = await factory.getMatchNames();
   const names = Array.isArray(availableEffects) ? availableEffects : [];
-  return names
-    .map((item: unknown) => {
-      if (typeof item === "string") return item;
-      if (item && typeof item === "object" && "matchName" in item) {
-        return String((item as { matchName: unknown }).matchName);
-      }
-      return "";
-    })
-    .filter((name: string) => name.startsWith("com.moneymoves."));
+  return Array.from(
+    new Set(
+      names
+        .map(hostMatchName)
+        .filter((name): name is string => name !== undefined)
+        .map(canonicalMoneyMovesMatchName)
+        .filter((name): name is string => name !== undefined),
+    ),
+  );
 }

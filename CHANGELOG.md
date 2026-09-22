@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.15.1 - Unreleased
+
+- Recognize Premiere's `AE.` and `PR.` effect namespace prefixes while keeping
+  stable `com.moneymoves.*` registry IDs. Apply uses the exact match name
+  returned by Premiere's video-filter factory; inspect and remove accept the
+  corresponding component match name.
+- Report missing factory registration before starting an undo transaction.
+
 ## 0.15.0 - Unreleased
 
 - Add a dedicated Diagnostics view in the panel with UXP, host, panel,

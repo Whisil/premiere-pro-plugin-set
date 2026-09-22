@@ -44,6 +44,16 @@ Environment audit on 2026-09-19:
 - The standalone `MoneyMoves-Toolkit-0.15.0.ccx` archive passed TypeScript,
   30 panel tests, formatting, ZIP integrity, and SHA-256 verification
   (`8683bf127b5ab8c9cfef7c4d339b89b5f201331f67178dfd1e8c15cbdae37337`).
+- The installed RGB Shift PiPL embeds `com.moneymoves.rgb-shift`.
+  [Adobe's VideoFilterFactory documentation](https://developer.adobe.com/premiere-pro/uxp/ppro-reference/classes/videofilterfactory)
+  shows `AE.`/`PR.`-prefixed host match names.
+  Panel 0.15.1 normalizes these forms for discovery and uses the exact host
+  name when creating a component. This is an API-compatibility fix based on
+  documented naming; the actual returned name and apply outcome are still
+  **pending Premiere-host observation**.
+- `MoneyMoves-Toolkit-0.15.1.ccx` passed TypeScript, 34 panel tests,
+  formatting, ZIP integrity, and SHA-256 verification
+  (`86b9977cc649e7dee34cedd797ca7b40469d83b3300d7b62105763b8ac221e43`).
 
 ### Panel 0.14.0 installation — 2026-09-21
 

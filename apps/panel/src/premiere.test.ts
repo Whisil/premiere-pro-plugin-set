@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { getEffectDefinition } from "@moneymoves/contracts";
 import {
   applyEffect,
+  canonicalMoneyMovesMatchName,
   fpsFromTimebase,
   frameGateTimingFromTicks,
   getSelectionSummary,
@@ -93,6 +94,46 @@ describe("Premiere effect transactions", () => {
       "Apply Frame Gate",
     );
     expect(host.addAction).toHaveBeenCalledTimes(4);
+  });
+
+  it("uses Premiere's AE-prefixed factory match name for a native effect", async () => {
+    const host = createPremiereMock(1, false, [], false, false, true);
+    setPremiereProviderForTesting(() => host.ppro);
+
+    await expect(
+      applyEffect("com.moneymoves.rgb-shift", "RGB Shift"),
+    ).resolves.toBe(1);
+    expect(host.createComponent).toHaveBeenCalledWith(
+      "AE.com.moneymoves.rgb-shift",
+    );
+    expect(host.executeTransaction).toHaveBeenCalledTimes(1);
+  });
+
+  it("explains a missing factory registration before changing the project", async () => {
+    const host = createPremiereMock(1);
+    host.ppro.VideoFilterFactory.getMatchNames = vi.fn(async () => []);
+    setPremiereProviderForTesting(() => host.ppro);
+
+    await expect(
+      applyEffect("com.moneymoves.rgb-shift", "RGB Shift"),
+    ).rejects.toThrow(/not registered as a video effect/);
+    expect(host.createComponent).not.toHaveBeenCalled();
+    expect(host.executeTransaction).not.toHaveBeenCalled();
+  });
+
+  it("finds an AE-prefixed component when inspecting and removing it", async () => {
+    const host = createPremiereMock(1, true, [], false, false, true);
+    setPremiereProviderForTesting(() => host.ppro);
+    const rgbShift = getEffectDefinition("com.moneymoves.rgb-shift")!;
+
+    await expect(inspectEffectSelection(rgbShift)).resolves.toMatchObject({
+      appliedClips: 1,
+      state: "all",
+    });
+    await expect(
+      removeEffect("com.moneymoves.rgb-shift", "RGB Shift"),
+    ).resolves.toBe(1);
+    expect(host.executeTransaction).toHaveBeenCalledTimes(1);
   });
 
   it("reports mixed RGB Shift values across selected clips", async () => {
@@ -209,6 +250,16 @@ describe("Premiere effect transactions", () => {
 });
 
 describe("installed MoneyMoves effect detection", () => {
+  it("normalizes Premiere's AE namespace without changing registry IDs", () => {
+    expect(canonicalMoneyMovesMatchName("AE.com.moneymoves.rgb-shift")).toBe(
+      "com.moneymoves.rgb-shift",
+    );
+    expect(canonicalMoneyMovesMatchName("PR.com.moneymoves.rgb-shift")).toBe(
+      "com.moneymoves.rgb-shift",
+    );
+    expect(canonicalMoneyMovesMatchName("PR.ADBE Solarize")).toBeUndefined();
+  });
+
   it("returns an empty list when Premiere has no match-name API", async () => {
     setPremiereProviderForTesting(() => ({ VideoFilterFactory: {} }));
     await expect(getInstalledMoneyMovesEffects()).resolves.toEqual([]);
@@ -219,6 +270,7 @@ describe("installed MoneyMoves effect detection", () => {
       VideoFilterFactory: {
         getMatchNames: vi.fn(async () => [
           "AE.ADBE Gaussian Blur",
+          "AE.com.moneymoves.rgb-shift",
           "com.moneymoves.rgb-shift",
           { matchName: "com.moneymoves.frame-gate" },
         ]),
@@ -237,6 +289,7 @@ function createPremiereMock(
   amounts: number[] = [],
   useProxyConstructor = false,
   timeVarying = false,
+  aePrefix = false,
 ) {
   const appendAction = Symbol("append");
   const removeAction = Symbol("remove");
@@ -260,7 +313,7 @@ function createPremiereMock(
     matchName = "com.moneymoves.rgb-shift",
   ) {
     const values =
-      matchName === "com.moneymoves.frame-gate"
+      canonicalMoneyMovesMatchName(matchName) === "com.moneymoves.frame-gate"
         ? [3, 5, 21, 5, 21, 0, 30, 300]
         : [amount, 0, 1, 0, -1, 1, 1];
     const params = values.map((value) => ({
@@ -310,7 +363,10 @@ function createPremiereMock(
     };
 
     constructor(index: number) {
-      this.component = createComponentForClip(amounts[index] ?? 12);
+      this.component = createComponentForClip(
+        amounts[index] ?? 12,
+        aePrefix ? "AE.com.moneymoves.rgb-shift" : "com.moneymoves.rgb-shift",
+      );
       this.chain = {
         createAppendComponentAction: vi.fn(() =>
           requireMutationScope(appendAction),
@@ -382,7 +438,13 @@ function createPremiereMock(
       },
       InterpolationMode: { LINEAR: 1, HOLD: 2, BEZIER: 3 },
     },
-    VideoFilterFactory: { createComponent },
+    VideoFilterFactory: {
+      createComponent,
+      getMatchNames: vi.fn(async () => [
+        aePrefix ? "AE.com.moneymoves.rgb-shift" : "com.moneymoves.rgb-shift",
+        aePrefix ? "AE.com.moneymoves.frame-gate" : "com.moneymoves.frame-gate",
+      ]),
+    },
   };
 
   return {

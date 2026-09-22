@@ -74,6 +74,9 @@ tooling outside Premiere.
 - Panel 0.15.0 adds an in-panel Diagnostics view for host/UXP versions,
   installed native match names, renderer status, and outstanding validation
   gates. It supersedes 0.14.2 as the next standalone installation candidate.
+- Panel 0.15.1 accommodates Adobe's `AE.` and `PR.` video-filter namespace
+  prefixes. Host testing must confirm which form Premiere 25.6.4 actually
+  reports for MoneyMoves; the adapter now accepts either form.
 - Reproducible ten-frame ProRes 4444 alpha feasibility artifact.
 
 ## Phase 0 gates
