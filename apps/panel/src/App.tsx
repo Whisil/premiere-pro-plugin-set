@@ -36,7 +36,11 @@ import {
   submitRenderJob,
   waitForRenderJob,
 } from "./renderer.js";
-import { filterEffects, selectedVisibleEffect } from "./effect-browser.js";
+import {
+  filterEffects,
+  isNativeEffectAvailable,
+  selectedVisibleEffect,
+} from "./effect-browser.js";
 
 type Notice = { tone: "info" | "success" | "error"; message: string };
 type PanelView = "effects" | "generate";
@@ -366,28 +370,28 @@ export function App() {
   );
   const [effectQuery, setEffectQuery] = useState("");
   const [installedMatchNames, setInstalledMatchNames] = useState<string[]>([]);
+  const [nativeDetection, setNativeDetection] = useState<
+    "checking" | "ready" | "error"
+  >("checking");
   const [selection, setSelection] = useState<SelectionSummary>();
   const [effectStates, setEffectStates] = useState<
     Record<string, EffectSelectionState>
   >({});
 
-  const installedEffects = useMemo(() => {
-    const available = EFFECT_REGISTRY.filter(
-      (effect) => effect.status === "available",
-    );
-    if (installedMatchNames.length === 0) return available;
-    const detected = available.filter((effect) =>
-      installedMatchNames.includes(effect.matchName),
-    );
-    return detected.length > 0 ? detected : available;
-  }, [installedMatchNames]);
+  const listedEffects = useMemo(
+    () => EFFECT_REGISTRY.filter((effect) => effect.status === "available"),
+    [],
+  );
   const filteredEffects = useMemo(() => {
-    return filterEffects(installedEffects, effectQuery);
-  }, [effectQuery, installedEffects]);
+    return filterEffects(listedEffects, effectQuery);
+  }, [effectQuery, listedEffects]);
   const selectedEffect = selectedVisibleEffect(
     filteredEffects,
     selectedMatchName,
   );
+  const selectedIsInstalled = selectedEffect
+    ? isNativeEffectAvailable(selectedEffect, installedMatchNames)
+    : false;
   const selectedState = selectedEffect
     ? effectStates[selectedEffect.matchName]
     : undefined;
@@ -431,25 +435,25 @@ export function App() {
     let lastSelectionSignature = "";
     async function refresh(): Promise<void> {
       try {
-        const [nextSelection, installed] = await Promise.all([
+        const [nextSelection, detection] = await Promise.all([
           getSelectionSummary().catch(() => undefined),
-          getInstalledMoneyMovesEffects().catch((): string[] => []),
+          getInstalledMoneyMovesEffects()
+            .then((names) => ({ names, failed: false }))
+            .catch(() => ({ names: [] as string[], failed: true })),
         ]);
         if (cancelled) return;
+        const installed = detection.names;
         setSelection(nextSelection);
         lastSelectionSignature = nextSelection
           ? `${nextSelection.selectedItems}:${nextSelection.videoClips}:${nextSelection.nonVideoItems}`
           : "unavailable";
         setInstalledMatchNames(installed);
-        const visible = EFFECT_REGISTRY.filter((effect) => {
-          if (effect.status !== "available") return false;
-          if (installed.length === 0) return true;
-          return installed.includes(effect.matchName);
-        });
-        const listed =
-          visible.length > 0
-            ? visible
-            : EFFECT_REGISTRY.filter((effect) => effect.status === "available");
+        setNativeDetection(detection.failed ? "error" : "ready");
+        const listed = EFFECT_REGISTRY.filter(
+          (effect) =>
+            effect.status === "available" &&
+            installed.includes(effect.matchName),
+        );
         const nextStates = await Promise.all(
           listed.map(async (effect) => {
             try {
@@ -475,6 +479,7 @@ export function App() {
       } catch {
         if (cancelled) return;
         setSelection(undefined);
+        setNativeDetection("error");
       }
     }
     void refresh();
@@ -520,30 +525,41 @@ export function App() {
     const nextSelection = await getSelectionSummary();
     setSelection(nextSelection);
     const nextStates = await Promise.all(
-      installedEffects.map(async (effect) => {
-        try {
-          return [
-            effect.matchName,
-            await inspectEffectSelection(effect),
-          ] as const;
-        } catch {
-          return [
-            effect.matchName,
-            {
-              selectedClips: 0,
-              appliedClips: 0,
-              state: "none" as const,
-              parameters: [],
-            },
-          ] as const;
-        }
-      }),
+      listedEffects
+        .filter((effect) =>
+          isNativeEffectAvailable(effect, installedMatchNames),
+        )
+        .map(async (effect) => {
+          try {
+            return [
+              effect.matchName,
+              await inspectEffectSelection(effect),
+            ] as const;
+          } catch {
+            return [
+              effect.matchName,
+              {
+                selectedClips: 0,
+                appliedClips: 0,
+                state: "none" as const,
+                parameters: [],
+              },
+            ] as const;
+          }
+        }),
     );
     setEffectStates(Object.fromEntries(nextStates));
   }
 
   function applyNamed(effect: EffectDefinition): void {
     setSelectedMatchName(effect.matchName);
+    if (!isNativeEffectAvailable(effect, installedMatchNames)) {
+      setNotice({
+        tone: "error",
+        message: `${effect.name} is not detected by Premiere. Reinstall the native effects, then restart Premiere.`,
+      });
+      return;
+    }
     if (!selection?.videoClips) {
       setNotice({ tone: "info", message: "Select a video clip first." });
       return;
@@ -627,25 +643,34 @@ export function App() {
           <h1>{view === "effects" ? "Effects" : "Generate"}</h1>
         </div>
         {view === "effects" ? (
-          <button
-            className={
-              selection?.videoClips ? "selection-pill ready" : "selection-pill"
-            }
-            uxp-variant="action"
-            disabled={busy}
-            onClick={() =>
-              void run(async () => {
-                await refreshStates();
-                setNotice({ tone: "info", message: "" });
-              })
-            }
-            title="Refresh timeline selection"
-            type="button"
-          >
-            <span className="selection-dot" />
-            {selectionCopy(selection)}
-            <span className="refresh-symbol">↻</span>
-          </button>
+          <div className="selection-tools">
+            <span
+              className={
+                selection?.videoClips
+                  ? "selection-pill ready"
+                  : "selection-pill"
+              }
+            >
+              <span className="selection-dot" />
+              {selectionCopy(selection)}
+            </span>
+            <button
+              aria-label="Refresh timeline selection"
+              className="selection-refresh"
+              uxp-variant="action"
+              disabled={busy}
+              onClick={() =>
+                void run(async () => {
+                  await refreshStates();
+                  setNotice({ tone: "info", message: "" });
+                })
+              }
+              title="Refresh timeline selection"
+              type="button"
+            >
+              ↻
+            </button>
+          </div>
         ) : (
           <p className="selection-state">
             {rendererOnline ? "Renderer online" : "Renderer offline"}
@@ -678,7 +703,7 @@ export function App() {
 
       {view === "effects" ? (
         <section className="effects-workspace">
-          {installedEffects.length === 0 ? (
+          {listedEffects.length === 0 ? (
             <p className="empty-state">
               No MoneyMoves effects are listed yet. Open a Premiere project,
               then try Apply on a selected clip.
@@ -696,6 +721,24 @@ export function App() {
                 />
                 <span className="effect-count">{filteredEffects.length}</span>
               </div>
+
+              {nativeDetection === "checking" ? (
+                <p className="notice">Checking native effects in Premiere…</p>
+              ) : null}
+              {nativeDetection === "error" ? (
+                <p className="notice error">
+                  The panel could not check Premiere's native effects. Restart
+                  Premiere, then reopen MoneyMoves Toolkit.
+                </p>
+              ) : null}
+              {nativeDetection === "ready" &&
+              installedMatchNames.length === 0 ? (
+                <p className="notice error">
+                  Premiere has not reported any MoneyMoves native effects. The
+                  library is shown for reference, but Apply is unavailable.
+                  Install the native bundles and restart Premiere.
+                </p>
+              ) : null}
 
               {!selection?.videoClips ? (
                 <div className="selection-help">
@@ -718,6 +761,10 @@ export function App() {
                       effect.matchName === selectedEffect?.matchName;
                     const isOn =
                       state?.state === "all" || state?.state === "some";
+                    const installed = isNativeEffectAvailable(
+                      effect,
+                      installedMatchNames,
+                    );
                     return (
                       <button
                         className={
@@ -737,9 +784,23 @@ export function App() {
                           <small>{effect.category}</small>
                         </span>
                         <span
-                          className={isOn ? "mini-status on" : "mini-status"}
+                          className={
+                            installed
+                              ? isOn
+                                ? "mini-status on"
+                                : "mini-status"
+                              : nativeDetection === "ready"
+                                ? "mini-status missing"
+                                : "mini-status"
+                          }
                         >
-                          {appliedCopy(state)}
+                          {installed
+                            ? appliedCopy(state)
+                            : nativeDetection === "checking"
+                              ? "Checking"
+                              : nativeDetection === "error"
+                                ? "Unknown"
+                                : "Missing"}
                         </span>
                       </button>
                     );
@@ -761,15 +822,25 @@ export function App() {
                       </div>
                       <span
                         className={
-                          selectedIsOn ? "status-chip on" : "status-chip"
+                          !selectedIsInstalled && nativeDetection === "ready"
+                            ? "status-chip missing"
+                            : selectedIsOn
+                              ? "status-chip on"
+                              : "status-chip"
                         }
                       >
-                        {appliedCopy(selectedState)}
+                        {selectedIsInstalled
+                          ? appliedCopy(selectedState)
+                          : nativeDetection === "checking"
+                            ? "Checking"
+                            : nativeDetection === "error"
+                              ? "Unknown"
+                              : "Not installed"}
                       </span>
                     </header>
 
                     <div className="inspector-actions">
-                      {selectedIsOn ? (
+                      {selectedIsInstalled && selectedIsOn ? (
                         <button
                           className="button-danger"
                           disabled={busy}
@@ -781,7 +852,11 @@ export function App() {
                       ) : (
                         <button
                           className="button-primary"
-                          disabled={busy || !selection?.videoClips}
+                          disabled={
+                            busy ||
+                            !selection?.videoClips ||
+                            !selectedIsInstalled
+                          }
                           onClick={() => applyNamed(selectedEffect)}
                           type="button"
                         >
@@ -789,7 +864,8 @@ export function App() {
                           {selection?.videoClips === 1 ? "" : "s"}
                         </button>
                       )}
-                      {selectedState?.state === "some" ? (
+                      {selectedIsInstalled &&
+                      selectedState?.state === "some" ? (
                         <button
                           className="button-secondary"
                           disabled={busy}
@@ -801,7 +877,16 @@ export function App() {
                       ) : null}
                     </div>
 
-                    {selectedIsOn && selectedEffect.parameters.length > 0 ? (
+                    {!selectedIsInstalled && nativeDetection === "ready" ? (
+                      <p className="inspector-missing">
+                        Premiere does not report this native effect. Reinstall
+                        the MoneyMoves native bundles and restart Premiere.
+                      </p>
+                    ) : null}
+
+                    {selectedIsInstalled &&
+                    selectedIsOn &&
+                    selectedEffect.parameters.length > 0 ? (
                       <div className="effect-editor">
                         {selectedEffect.presets.length > 0 ? (
                           <section className="inspector-section">
@@ -914,14 +999,14 @@ export function App() {
                           ))}
                         </section>
                       </div>
-                    ) : (
+                    ) : selectedIsInstalled ? (
                       <div className="inspector-empty">
                         <span aria-hidden="true">＋</span>
                         <p>
                           Apply this effect to unlock its presets and controls.
                         </p>
                       </div>
-                    )}
+                    ) : null}
                   </article>
                 ) : null}
               </div>

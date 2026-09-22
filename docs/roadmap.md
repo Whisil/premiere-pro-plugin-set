@@ -68,6 +68,9 @@ tooling outside Premiere.
 - Panel 0.14.1 replaces unsupported CSS Grid after Premiere host screenshots
   showed empty navigation and effect results even while search counts changed.
   The corrected layout still needs visual approval in Premiere 25.6.4.
+- Panel 0.14.2 reports native-effect discovery honestly: an empty match-name
+  list no longer makes every effect appear applicable. This build also needs
+  Premiere-host confirmation before Phase 0 can pass.
 - Reproducible ten-frame ProRes 4444 alpha feasibility artifact.
 
 ## Phase 0 gates

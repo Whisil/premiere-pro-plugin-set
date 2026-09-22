@@ -21,6 +21,23 @@ Environment audit on 2026-09-19:
 
 ## Production installation evidence
 
+### Panel 0.14.0 visual failure and replacement build — 2026-09-22
+
+- User screenshots from Premiere Pro 25.6.4 showed that typing `ASCII`
+  changed the search count from 12 to 1, while the effect list and inspector
+  remained blank. This is a failed host UI check, not a successful search or
+  effect-application check.
+- [Adobe's Premiere UXP CSS guidance](https://developer.adobe.com/premiere-pro/uxp/resources/recipes/css-styling/)
+  excludes Grid layout. Panel 0.14.1
+  replaces the Grid-based workspace with Flexbox and corrects the selected
+  inspector after filtering. Panel 0.14.2 additionally shows a native effect
+  as missing when Premiere's filter factory does not report its match name;
+  the registry alone no longer enables Apply.
+- `MoneyMoves-Toolkit-0.14.2.ccx` has passed TypeScript checks, panel tests,
+  formatting, package integrity, and checksum verification. Host visual and
+  effect-application results remain **pending** until the running Premiere
+  session is closed and this build is installed and reopened.
+
 ### Panel 0.14.0 installation — 2026-09-21
 
 - Built after commits `9ee2213` and `c079bb2` using the standalone offline

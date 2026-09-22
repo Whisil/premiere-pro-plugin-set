@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { EFFECT_REGISTRY } from "@moneymoves/contracts";
-import { filterEffects, selectedVisibleEffect } from "./effect-browser.js";
+import {
+  filterEffects,
+  isNativeEffectAvailable,
+  selectedVisibleEffect,
+} from "./effect-browser.js";
 
 const installed = EFFECT_REGISTRY.filter(
   (effect) => effect.status === "available",
@@ -26,5 +30,16 @@ describe("effect browser", () => {
         "com.moneymoves.rgb-shift",
       ),
     ).toBeUndefined();
+  });
+
+  it("does not treat the registry as proof that native effects are installed", () => {
+    const rgbShift = installed.find(
+      (effect) => effect.matchName === "com.moneymoves.rgb-shift",
+    )!;
+    expect(isNativeEffectAvailable(rgbShift, [])).toBe(false);
+    expect(
+      isNativeEffectAvailable(rgbShift, ["com.moneymoves.frame-gate"]),
+    ).toBe(false);
+    expect(isNativeEffectAvailable(rgbShift, [rgbShift.matchName])).toBe(true);
   });
 });

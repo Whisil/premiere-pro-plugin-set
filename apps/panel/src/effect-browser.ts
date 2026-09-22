@@ -22,3 +22,10 @@ export function selectedVisibleEffect(
     effects[0]
   );
 }
+
+export function isNativeEffectAvailable(
+  effect: EffectDefinition,
+  installedMatchNames: readonly string[],
+): boolean {
+  return installedMatchNames.includes(effect.matchName);
+}

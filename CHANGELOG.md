@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.14.2 - Unreleased
+
+- Show the effect library without pretending that registered effects are
+  installed. Missing native bundles are clearly labeled, and Apply is disabled
+  until Premiere reports the corresponding match name.
+- Distinguish checking, missing, and detection-error states so installation
+  problems are visible in the panel.
+- Replace the distorted native selection pill with a plain status badge and a
+  separate refresh control. Keep TypeScript's generated files out of `src`.
+
 ## 0.14.1 - Unreleased
 
 - Replace unsupported CSS Grid layouts with responsive Flexbox so navigation,
