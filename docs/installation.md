@@ -35,7 +35,7 @@ plugin state during installation.
 
 The current panel package is:
 
-`artifacts/releases/MoneyMoves-Toolkit-0.14.0.ccx`
+`artifacts/releases/MoneyMoves-Toolkit-0.14.1.ccx`
 
 1. Quit Premiere Pro.
 2. Open **Terminal**.
@@ -44,7 +44,7 @@ The current panel package is:
    ```sh
    cd "/Users/davidgajdamaka/Desktop/code/moneymoves-plugin-set"
    cd artifacts/releases
-   /usr/bin/shasum -a 256 -c MoneyMoves-Toolkit-0.14.0.ccx.sha256
+   /usr/bin/shasum -a 256 -c MoneyMoves-Toolkit-0.14.1.ccx.sha256
    ```
 
    The result must end with `OK`.
@@ -52,7 +52,7 @@ The current panel package is:
 4. Normally, install the `.ccx` through Adobe's Unified Plugin Installer Agent:
 
    ```sh
-   CCX="/Users/davidgajdamaka/Desktop/code/moneymoves-plugin-set/artifacts/releases/MoneyMoves-Toolkit-0.14.0.ccx"
+   CCX="/Users/davidgajdamaka/Desktop/code/moneymoves-plugin-set/artifacts/releases/MoneyMoves-Toolkit-0.14.1.ccx"
    sudo "$UPIA" --install "$CCX"
    ```
 

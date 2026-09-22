@@ -36,7 +36,8 @@ button,
 input,
 textarea,
 select {
-  font: inherit;
+  font-family: inherit;
+  font-size: inherit;
 }
 
 button {
@@ -102,9 +103,7 @@ button:disabled {
 }
 
 .workspace-nav {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px;
+  display: flex;
   margin-bottom: 14px;
   padding: 3px;
   border: 1px solid #343439;
@@ -113,6 +112,8 @@ button:disabled {
 }
 
 .workspace-nav button {
+  flex: 1 1 0;
+  margin-right: 2px;
   color: #aeadb3;
   border: 0;
   background: transparent;
@@ -122,15 +123,15 @@ button:disabled {
 .workspace-nav button.active {
   color: #f5f2e9;
   background: #35353a;
-  box-shadow: inset 0 -2px #e1b91f;
+  border-bottom: 2px solid #e1b91f;
 }
 
 .eyebrow {
   margin: 0;
   color: #ffcc28;
-  font:
-    700 9px/1 Menlo,
-    monospace;
+  font-family: Menlo, monospace;
+  font-size: 9px;
+  font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
@@ -158,7 +159,7 @@ h2 {
   max-width: 190px;
   color: #b8b7bd;
   border-color: #3c3c42;
-  border-radius: 999px;
+  border-radius: 5px;
   background: #1d1d21;
   font-size: 11px;
 }
@@ -227,6 +228,8 @@ h2 {
 }
 
 .effect-search input {
+  flex: 1 1 auto;
+  width: auto;
   min-width: 0;
   padding: 8px 9px;
   border: 0;
@@ -240,9 +243,8 @@ h2 {
 .effect-count {
   min-width: 22px;
   color: #8d8c92;
-  font:
-    10px/1 Menlo,
-    monospace;
+  font-family: Menlo, monospace;
+  font-size: 10px;
   text-align: right;
 }
 
@@ -282,16 +284,19 @@ h2 {
 }
 
 .effect-layout {
-  display: grid;
-  grid-template-columns: minmax(185px, 0.75fr) minmax(250px, 1.6fr);
-  gap: 10px;
-  align-items: start;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
 }
 
 .effect-browser {
   display: flex;
   flex-direction: column;
+  flex: 1 1 185px;
   min-width: 0;
+  max-width: 280px;
+  margin-right: 10px;
+  margin-bottom: 10px;
   overflow: hidden;
   border: 1px solid #35353a;
   border-radius: 7px;
@@ -324,7 +329,7 @@ h2 {
 .effect-list-item.selected {
   color: #fffdf5;
   background: #303035;
-  box-shadow: inset 3px 0 #e1b91f;
+  border-left: 3px solid #e1b91f;
 }
 
 .state-dot {
@@ -358,9 +363,8 @@ h2 {
 .category-label {
   margin-top: 2px;
   color: #8f8e95;
-  font:
-    8px/1.2 Menlo,
-    monospace;
+  font-family: Menlo, monospace;
+  font-size: 8px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -368,9 +372,8 @@ h2 {
 .mini-status {
   margin-left: 7px;
   color: #77777f;
-  font:
-    8px/1 Menlo,
-    monospace;
+  font-family: Menlo, monospace;
+  font-size: 8px;
   text-transform: uppercase;
 }
 
@@ -386,6 +389,7 @@ h2 {
 }
 
 .effect-inspector {
+  flex: 2 1 260px;
   min-width: 0;
   overflow: hidden;
   border: 1px solid #3a3a40;
@@ -424,10 +428,9 @@ h2 {
   padding: 4px 7px;
   color: #a4a3a9;
   border: 1px solid #46464d;
-  border-radius: 999px;
-  font:
-    8px/1 Menlo,
-    monospace;
+  border-radius: 4px;
+  font-family: Menlo, monospace;
+  font-size: 8px;
   text-transform: uppercase;
 }
 
@@ -440,21 +443,22 @@ h2 {
 .inspector-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
   padding: 11px 14px;
   border-bottom: 1px solid #37373c;
 }
 
 .inspector-actions button {
   flex: 0 1 auto;
+  margin-right: 7px;
+  margin-bottom: 7px;
 }
 
 .status {
   padding: 3px 6px;
   border-radius: 3px;
-  font:
-    700 8px/1 Menlo,
-    monospace;
+  font-family: Menlo, monospace;
+  font-size: 8px;
+  font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -477,7 +481,11 @@ h2 {
 .preset-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+}
+
+.preset-row button {
+  margin-right: 6px;
+  margin-bottom: 6px;
 }
 
 .preset-button {
@@ -499,9 +507,8 @@ h2 {
 .inspector-section h3 {
   margin: 0 0 10px;
   color: #8f8e95;
-  font:
-    9px/1 Menlo,
-    monospace;
+  font-family: Menlo, monospace;
+  font-size: 9px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -541,9 +548,9 @@ h2 {
 .mixed {
   margin-left: 6px;
   color: #ffcc28;
-  font:
-    700 9px/1 Menlo,
-    monospace;
+  font-family: Menlo, monospace;
+  font-size: 9px;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
@@ -589,9 +596,8 @@ input[type="color"] {
   margin-left: 6px;
   min-width: 38px;
   color: #9f9faf;
-  font:
-    9px/1 Menlo,
-    monospace;
+  font-family: Menlo, monospace;
+  font-size: 9px;
 }
 
 .pattern-control {
@@ -618,7 +624,6 @@ input[type="color"] {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px;
   margin-top: 6px;
   padding-top: 6px;
   border-top: 1px solid #343439;
@@ -627,6 +632,8 @@ input[type="color"] {
 .animate-button,
 .keyframe-button {
   min-height: 24px;
+  margin-right: 4px;
+  margin-bottom: 4px;
   padding: 3px 7px;
   color: #aaa9af;
   border-color: #414147;
@@ -704,13 +711,18 @@ input[type="color"] {
 }
 
 .field-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
 }
 
-.output-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+.field-grid .field {
+  flex: 1 1 160px;
+  min-width: 0;
+  margin-right: 8px;
+}
+
+.output-grid .field {
+  flex-basis: 100px;
 }
 
 .swatches {
@@ -729,8 +741,12 @@ input[type="color"] {
 
 .generator-actions {
   flex-wrap: wrap;
-  gap: 7px;
   justify-content: space-between;
+}
+
+.generator-actions button {
+  margin-right: 7px;
+  margin-bottom: 7px;
 }
 
 .generator-actions .hint {
@@ -739,12 +755,14 @@ input[type="color"] {
 }
 
 .job {
-  gap: 8px;
   padding: 8px 0;
   border-bottom: 1px solid #343455;
-  font:
-    10px/1.3 Menlo,
-    monospace;
+  font-family: Menlo, monospace;
+  font-size: 10px;
+}
+
+.job > * {
+  margin-right: 8px;
 }
 
 @media (max-width: 420px) {
@@ -757,27 +775,35 @@ input[type="color"] {
   }
 
   .effect-layout {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
 
-  .field-grid,
-  .output-grid {
-    grid-template-columns: 1fr;
+  .effect-browser,
+  .effect-inspector {
+    width: 100%;
+    max-width: none;
+    margin-right: 0;
+  }
+
+  .field-grid .field {
+    flex-basis: 100%;
+    margin-right: 0;
   }
 }
 
 @media (min-width: 421px) and (max-width: 620px) {
   .effect-layout {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
 
   .effect-browser {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    max-width: none;
+    margin-right: 0;
   }
 
-  .effect-list-item {
-    border-right: 1px solid #303035;
+  .effect-inspector {
+    width: 100%;
   }
 }
 

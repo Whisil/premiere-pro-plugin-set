@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.14.1 - Unreleased
+
+- Replace unsupported CSS Grid layouts with responsive Flexbox so navigation,
+  effect results, the inspector, and generation fields render in Premiere UXP.
+- Remove unsupported font shorthand and use compact action-button styling in
+  the effect browser.
+- Make a filtered search result the visible effect in the inspector, and reject
+  future panel packages containing CSS Grid.
+
 ## 0.14.0 - Unreleased
 
 - Add compact animation and keyframe controls to every supported effect

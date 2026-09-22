@@ -39,6 +39,11 @@ if "$grep_bin" -Eq 'type="module"|crossorigin' "$html_file"; then
   exit 1
 fi
 
+if "$grep_bin" -Eq 'display:grid|grid-template-' "$dist_dir/assets/index.js"; then
+  echo "Panel package is not UXP-compatible: bundled CSS contains unsupported Grid layout." >&2
+  exit 1
+fi
+
 if ! "$grep_bin" -Fq "entrypoints.setup" "$html_file"; then
   echo "Panel package is not UXP-compatible: inline entrypoints bootstrap is missing." >&2
   exit 1

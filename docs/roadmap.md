@@ -65,6 +65,9 @@ tooling outside Premiere.
 - Panel 0.14.0 adds playhead-aware animation controls, keyframe navigation,
   and Linear/Hold/Bezier interpolation to the focused inspector. Premiere
   25.6.4 host validation remains required before marking the workflow done.
+- Panel 0.14.1 replaces unsupported CSS Grid after Premiere host screenshots
+  showed empty navigation and effect results even while search counts changed.
+  The corrected layout still needs visual approval in Premiere 25.6.4.
 - Reproducible ten-frame ProRes 4444 alpha feasibility artifact.
 
 ## Phase 0 gates

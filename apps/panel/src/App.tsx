@@ -36,6 +36,7 @@ import {
   submitRenderJob,
   waitForRenderJob,
 } from "./renderer.js";
+import { filterEffects, selectedVisibleEffect } from "./effect-browser.js";
 
 type Notice = { tone: "info" | "success" | "error"; message: string };
 type PanelView = "effects" | "generate";
@@ -380,23 +381,18 @@ export function App() {
     );
     return detected.length > 0 ? detected : available;
   }, [installedMatchNames]);
-  const selectedEffect =
-    installedEffects.find((effect) => effect.matchName === selectedMatchName) ??
-    installedEffects[0];
+  const filteredEffects = useMemo(() => {
+    return filterEffects(installedEffects, effectQuery);
+  }, [effectQuery, installedEffects]);
+  const selectedEffect = selectedVisibleEffect(
+    filteredEffects,
+    selectedMatchName,
+  );
   const selectedState = selectedEffect
     ? effectStates[selectedEffect.matchName]
     : undefined;
   const selectedIsOn =
     selectedState?.state === "all" || selectedState?.state === "some";
-  const filteredEffects = useMemo(() => {
-    const query = effectQuery.trim().toLowerCase();
-    if (!query) return installedEffects;
-    return installedEffects.filter((effect) =>
-      `${effect.name} ${effect.category} ${effect.description}`
-        .toLowerCase()
-        .includes(query),
-    );
-  }, [effectQuery, installedEffects]);
 
   useEffect(() => {
     if (selectedEffect) persistEffectMatchName(selectedEffect.matchName);
@@ -635,6 +631,7 @@ export function App() {
             className={
               selection?.videoClips ? "selection-pill ready" : "selection-pill"
             }
+            uxp-variant="action"
             disabled={busy}
             onClick={() =>
               void run(async () => {
@@ -659,6 +656,7 @@ export function App() {
       <nav className="workspace-nav" aria-label="MoneyMoves workspace">
         <button
           className={view === "effects" ? "active" : "quiet"}
+          uxp-variant="action"
           onClick={() => setView("effects")}
           type="button"
         >
@@ -666,6 +664,7 @@ export function App() {
         </button>
         <button
           className={view === "generate" ? "active" : "quiet"}
+          uxp-variant="action"
           onClick={() => setView("generate")}
           type="button"
         >
@@ -726,6 +725,7 @@ export function App() {
                             ? "effect-list-item selected"
                             : "effect-list-item"
                         }
+                        uxp-variant="action"
                         disabled={busy}
                         onClick={() => chooseEffect(effect)}
                         key={effect.matchName}
