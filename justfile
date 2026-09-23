@@ -9,6 +9,11 @@ target_dir := env_var_or_default("CARGO_TARGET_DIR", "target")
 default:
     @just --list
 
+native-release-all: native-rgb-release native-frame-release native-halftone-release native-dot-matrix-release native-eight-bit-release native-dither-release native-chromatic-release native-barrel-blur-release native-bloom-release native-progressive-blur-release native-crt-release native-ascii-release
+
+package-native-release: native-release-all
+    ./scripts/package-native-release.sh
+
 native-validate:
     ./scripts/validate-native-toolchain.sh
 

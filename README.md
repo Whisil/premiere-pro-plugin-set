@@ -23,6 +23,7 @@ pnpm install
 pnpm check
 pnpm build
 pnpm package:panel
+pnpm package:native
 cargo run -p shaderbench -- --help
 ```
 
@@ -33,11 +34,11 @@ Run the renderer with `pnpm dev:renderer` and the panel build with `pnpm dev:pan
 Double-click `Install MoneyMoves Toolkit.command` in the repository root. If
 Premiere or UXP Developer Tool is open, the installer waits while you save and
 fully quit both apps; press Return in its Terminal window to continue. Enter
-the macOS administrator password when prompted. The verified current build is installed
-directly into Adobe's production UXP folders; Creative Cloud Desktop and UXP
-Developer Tool are not used. Reopen Premiere, then choose **Window → UXP
-Plugins → MoneyMoves Toolkit**. See [Installation](docs/installation.md) for
-the equivalent Terminal command, backups, native effects, and troubleshooting.
+the macOS administrator password when prompted. The verified current panel and
+all 12 signed native effects are installed together; Creative Cloud Desktop
+and UXP Developer Tool are not used. Reopen Premiere, then choose **Window →
+UXP Plugins → MoneyMoves Toolkit**. See [Installation](docs/installation.md)
+for the equivalent Terminal commands, backups, and troubleshooting.
 
 ## Components
 

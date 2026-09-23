@@ -2,6 +2,12 @@
 
 ## 0.15.1 - Unreleased
 
+- Package all 12 optimized Apple Silicon native effects as one checksummed,
+  manifest-validated release archive with entry-point and PiPL verification.
+- Add a guarded native release installer with verify-only mode, exact inventory
+  validation, backups, and automatic rollback after a failed copy.
+- Make the double-click offline installer install the panel and native effects
+  together so normal setup no longer requires 12 developer recipes.
 - Recognize Premiere's `AE.` and `PR.` effect namespace prefixes while keeping
   stable `com.moneymoves.*` registry IDs. Apply uses the exact match name
   returned by Premiere's video-filter factory; inspect and remove accept the

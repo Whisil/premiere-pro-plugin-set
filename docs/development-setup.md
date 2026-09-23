@@ -18,6 +18,8 @@ The 2026-09-19 follow-up audit found Xcode 16.4, UXP Developer Tool 2.3, the Aft
 pnpm install
 pnpm build
 pnpm test
+pnpm package:native
+pnpm verify:native-release
 cargo run -p shaderbench -- --help
 ```
 
@@ -83,7 +85,16 @@ just native-dither-install
 just native-chromatic-install
 just native-barrel-blur-install
 just native-bloom-install
+just native-progressive-blur-install
+just native-crt-install
+just native-ascii-install
 ```
+
+For a staged production release, `pnpm package:native` builds all 12 optimized
+bundles, verifies their CPU/GPU entry points, PiPL match names, signatures, and
+arm64 architecture, then creates a checksummed archive. Run
+`pnpm verify:native-release` without changing MediaCore, or quit Premiere and
+run `pnpm install:native-release` to install the complete set with rollback.
 
 `prgpu-build` 0.2.0 has a crates.io include-path defect for its bundled `vekl` shaders. The RGB Shift build script resolves the `vekl` copy belonging to the exact pinned `prgpu` crate. Set `PRGPU_VEKL_ROOT` only when using a vendored Cargo registry.
 

@@ -17,6 +17,9 @@
     "dev:renderer": "pnpm --filter @moneymoves/render-service dev",
     "build:panel": "pnpm --filter @moneymoves/panel build",
     "package:panel": "./scripts/package-panel.sh",
+    "package:native": "just package-native-release",
+    "verify:native-release": "./scripts/install-native-release.sh --verify-only",
+    "install:native-release": "./scripts/install-native-release.sh",
     "reinstall:panel": "./scripts/reinstall-panel.sh",
     "build:renderer": "pnpm --filter @moneymoves/render-service build",
     "validate:alpha-spike": "pnpm --filter @moneymoves/contracts build && pnpm --filter @moneymoves/render-service build && node scripts/generate-alpha-spike.mjs"

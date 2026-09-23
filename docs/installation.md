@@ -29,6 +29,20 @@ files, and updates Premiere's UXP registry. It does not require Creative Cloud
 Desktop or UXP Developer Tool. It requests the macOS administrator password
 because Adobe's production UXP folders are system-owned.
 
+The double-click installer additionally verifies and installs the matching
+`MoneyMoves-Native-Effects-<version>.zip`, which contains all 12 signed Apple
+Silicon effects. For the same two-stage installation from Terminal, use:
+
+```sh
+pnpm reinstall:panel
+pnpm install:native-release
+```
+
+Both commands require Premiere to be fully quit. The native installer verifies
+the archive checksum, exact manifest, architecture, and every bundle signature
+before changing MediaCore. If a copy fails, it restores the previous native
+bundles from `artifacts/install-backups`.
+
 The helper refuses to change installation files while Premiere or UXP
 Developer Tool is open. The double-clickable command waits for you to quit
 them; the direct `pnpm reinstall:panel` command exits instead. Both protect
@@ -68,9 +82,18 @@ The current panel package is:
 5. Start Premiere Pro, then open **Window → UXP Plugins → MoneyMoves Toolkit**.
    If Premiere was already running during installation, quit and reopen it.
 
-The `.ccx` contains the UXP panel. Native video effects are installed into
-Premiere's per-user MediaCore folder separately. From the repository root, run
-the recipes for the effects you want:
+The `.ccx` contains the UXP panel. The production native-effect archive is:
+
+`artifacts/releases/MoneyMoves-Native-Effects-0.15.1.zip`
+
+Developers can rebuild and verify it with:
+
+```sh
+pnpm package:native
+pnpm verify:native-release
+```
+
+For an individual development bundle, the per-effect recipes remain available:
 
 ```sh
 just native-rgb-install
