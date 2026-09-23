@@ -7,6 +7,8 @@
 - Add host-layout regression checks for picker and inspector ordering.
 - Replace unsupported native color inputs with editable hex values, previews,
   and swatches from the effect's selected MoneyMoves palette.
+- Keep panel packaging offline by invoking the installed TypeScript and Vite
+  binaries directly instead of triggering package-manager dependency repair.
 
 ## 0.15.1 - Unreleased
 

@@ -10,15 +10,27 @@ version="$(node -p "require('$panel_dir/package.json').version")"
 artifact="$release_dir/MoneyMoves-Toolkit-$version.ccx"
 checksum="$artifact.sha256"
 stage_dir="$(mktemp -d "${TMPDIR:-/tmp}/moneymoves-ccx.XXXXXX")"
+typescript="$repo_root/node_modules/.bin/tsc"
+vite="$panel_dir/node_modules/.bin/vite"
 
 cleanup() {
   rm -rf "$stage_dir"
 }
 trap cleanup EXIT
 
-cd "$repo_root"
-CI=true pnpm --filter @moneymoves/contracts build
-CI=true pnpm --filter @moneymoves/panel build
+if [[ ! -x "$typescript" || ! -x "$vite" ]]; then
+  echo "Panel build dependencies are missing. Run pnpm install first." >&2
+  exit 69
+fi
+
+(
+  cd "$repo_root/packages/contracts"
+  "$typescript" -p tsconfig.json
+)
+(
+  cd "$panel_dir"
+  "$vite" build
+)
 
 test -f "$dist_dir/manifest.json"
 test -f "$dist_dir/index.html"
