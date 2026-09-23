@@ -30,9 +30,10 @@ Run the renderer with `pnpm dev:renderer` and the panel build with `pnpm dev:pan
 
 ## Install the panel without developer tools
 
-Quit Premiere and UXP Developer Tool, then double-click
-`Install MoneyMoves Toolkit.command` in the repository root. Enter the macOS
-administrator password when prompted. The verified current build is installed
+Double-click `Install MoneyMoves Toolkit.command` in the repository root. If
+Premiere or UXP Developer Tool is open, the installer waits while you save and
+fully quit both apps; press Return in its Terminal window to continue. Enter
+the macOS administrator password when prompted. The verified current build is installed
 directly into Adobe's production UXP folders; Creative Cloud Desktop and UXP
 Developer Tool are not used. Reopen Premiere, then choose **Window → UXP
 Plugins → MoneyMoves Toolkit**. See [Installation](docs/installation.md) for

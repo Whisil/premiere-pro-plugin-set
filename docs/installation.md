@@ -10,10 +10,12 @@ UPIA="/Library/Application Support/Adobe/Adobe Desktop Common/RemoteComponents/U
 
 ## Replace a blank panel
 
-Premiere keeps a leftover copy until it is removed. Quit Premiere and UXP
-Developer Tool, then double-click `Install MoneyMoves Toolkit.command` in the
-repository root. This is the normal offline installation path and does not
-open Creative Cloud or UXP Developer Tool.
+Premiere keeps a leftover copy until it is removed. Double-click
+`Install MoneyMoves Toolkit.command` in the repository root. If Premiere or
+UXP Developer Tool is open, the command pauses while you save your work and
+fully quit both apps. Press Return in its Terminal window once they are
+closed. This is the normal offline installation path and does not open
+Creative Cloud or UXP Developer Tool.
 
 The equivalent Terminal command is:
 
@@ -27,9 +29,10 @@ files, and updates Premiere's UXP registry. It does not require Creative Cloud
 Desktop or UXP Developer Tool. It requests the macOS administrator password
 because Adobe's production UXP folders are system-owned.
 
-The command refuses to run while Premiere or UXP Developer Tool is open. This
-protects unsaved projects and prevents either application from restoring stale
-plugin state during installation.
+The helper refuses to change installation files while Premiere or UXP
+Developer Tool is open. The double-clickable command waits for you to quit
+them; the direct `pnpm reinstall:panel` command exits instead. Both protect
+unsaved projects and prevent stale plugin state from being restored.
 
 ## Alternative: install the packaged panel with Adobe UPIA
 

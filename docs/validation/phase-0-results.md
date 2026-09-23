@@ -21,6 +21,26 @@ Environment audit on 2026-09-19:
 
 ## Production installation evidence
 
+### Panel 0.15.1 installation — 2026-09-23
+
+- Installed the verified standalone `MoneyMoves-Toolkit-0.15.1.ccx` through
+  `Install MoneyMoves Toolkit.command` while Premiere and UXP Developer Tool
+  were fully closed. Creative Cloud Desktop and UXP Developer Tool were not
+  used for installation.
+- The only MoneyMoves system UXP directory is
+  `/Library/Application Support/Adobe/UXP/Plugins/External/com.moneymoves.premiere-toolkit_0.15.1`.
+  Its `index.html` matches the packaged build, and Adobe's system registry
+  points to that directory with `status: enabled` and version `0.15.1`.
+- The previous 0.14.0 panel and its UXP storage were preserved under
+  `artifacts/install-backups/moneymoves-panel-20260923T000622Z`.
+- A fresh Premiere Pro 25.6.4 launch created
+  `UXPLogs_2026-09-23_02-07-29_915629.log`; it records the MoneyMoves ID as
+  enabled and `Number of plugins added from system's pluginsInfo: 1`. No
+  MoneyMoves initialization error appears in that log.
+- This proves production installation and discovery. Visual layout, native
+  match-name discovery, Apply/Remove, one-step Undo, and render behavior remain
+  **pending interaction in the opened panel**.
+
 ### Panel 0.14.0 visual failure and replacement build — 2026-09-22
 
 - User screenshots from Premiere Pro 25.6.4 showed that typing `ASCII`
