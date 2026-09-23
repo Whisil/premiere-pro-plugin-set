@@ -21,6 +21,21 @@ Environment audit on 2026-09-19:
 
 ## Production installation evidence
 
+### Panel 0.15.2 candidate — 2026-09-23
+
+- Replaces the Premiere-visible two-column browser with a compact wrapping
+  effect picker and a full-width inspector. This specifically addresses the
+  failed host view where the search count changed but its result stayed blank.
+- Source checks and packaging may prove build integrity only. Visual layout,
+  native discovery, and Apply/Remove remain pending until Premiere is closed,
+  the candidate is installed, and the host is reopened.
+- `MoneyMoves-Toolkit-0.15.2.ccx` passed TypeScript, 35 panel tests, UXP CSS
+  compatibility checks, ZIP integrity, and SHA-256 verification
+  (`9256bac1bfabe1ec6c73b592fe7c0b5641c99ec08be1bcdb09b26b1a5d97d434`).
+- `MoneyMoves-Native-Effects-0.15.2.zip` contains the exact 12-effect manifest;
+  every bundle passed ad-hoc signature and arm64 checks. SHA-256:
+  `353959e24dbd9b51c98083dca44aa2b8ac7a13e560db5431edd46cf8e1f5f931`.
+
 ### Panel 0.15.1 installation — 2026-09-23
 
 - Installed the verified standalone `MoneyMoves-Toolkit-0.15.1.ccx` through

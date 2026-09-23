@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { EFFECT_REGISTRY } from "@moneymoves/contracts";
 import { App } from "./App.js";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -14,6 +15,14 @@ describe("effect workspace", () => {
     expect(markup).toContain("RGB Shift");
     expect(markup).toContain("ASCII");
     expect(markup).toContain("Checking");
+    expect(markup).toContain('class="effect-picker"');
+    expect(markup).toContain('class="effect-inspector"');
+    expect(markup.match(/class="effect-chip(?: selected)?"/g)).toHaveLength(
+      EFFECT_REGISTRY.filter((effect) => effect.status === "available").length,
+    );
+    expect(markup.indexOf('class="effect-picker"')).toBeLessThan(
+      markup.indexOf('class="effect-inspector"'),
+    );
     expect(markup).not.toContain("Not installed");
     expect(markup).not.toContain("Apply this effect to unlock");
     expect(markup).toMatch(

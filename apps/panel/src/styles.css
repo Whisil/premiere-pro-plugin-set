@@ -292,53 +292,40 @@ h2 {
   line-height: 1.35;
 }
 
-.effect-layout {
+.effect-picker {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-}
-
-.effect-browser {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 185px;
-  min-width: 0;
-  max-width: 280px;
-  margin-right: 10px;
   margin-bottom: 10px;
-  overflow: hidden;
-  border: 1px solid #35353a;
-  border-radius: 7px;
-  background: #1c1c20;
 }
 
-.effect-list-item {
+.effect-chip {
   display: flex;
   align-items: center;
-  width: 100%;
-  min-height: 48px;
-  padding: 7px 9px;
+  flex: 0 1 auto;
+  min-height: 34px;
+  margin: 0 6px 6px 0;
+  padding: 6px 8px;
   color: #d8d6d0;
-  border: 0;
-  border-bottom: 1px solid #303035;
-  border-radius: 0;
-  background: transparent;
+  border: 1px solid #3d3d43;
+  border-radius: 5px;
+  background: #202024;
   text-align: left;
 }
 
-.effect-list-item:last-child {
-  border-bottom: 0;
-}
-
-.effect-list-item:hover:not(:disabled) {
-  border-color: #303035;
+.effect-chip:hover:not(:disabled) {
+  border-color: #5a5a62;
   background: #29292e;
 }
 
-.effect-list-item.selected {
+.effect-chip.selected {
   color: #fffdf5;
-  background: #303035;
-  border-left: 3px solid #e1b91f;
+  border-color: #e1b91f;
+  background: #302c1d;
+}
+
+.effect-chip strong {
+  font-size: 10px;
+  white-space: nowrap;
 }
 
 .state-dot {
@@ -354,21 +341,6 @@ h2 {
   background: #8ed45f;
 }
 
-.effect-list-copy {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.effect-list-copy strong {
-  overflow: hidden;
-  font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.effect-list-copy small,
 .category-label {
   margin-top: 2px;
   color: #8f8e95;
@@ -395,14 +367,18 @@ h2 {
 }
 
 .no-results {
-  margin: 0;
-  padding: 16px 10px;
+  width: 100%;
+  margin: 0 0 6px;
+  padding: 12px 10px;
+  border: 1px solid #35353a;
+  border-radius: 5px;
+  background: #1c1c20;
   color: #8f8e95;
   font-size: 11px;
 }
 
 .effect-inspector {
-  flex: 2 1 260px;
+  width: 100%;
   min-width: 0;
   overflow: hidden;
   border: 1px solid #3a3a40;
@@ -596,9 +572,48 @@ textarea {
   resize: vertical;
 }
 
-input[type="checkbox"],
-input[type="color"] {
+input[type="checkbox"] {
   width: auto;
+}
+
+.color-control {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.color-preview {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  margin-right: 6px;
+  border: 1px solid #5a5a62;
+  border-radius: 4px;
+}
+
+.color-control input {
+  flex: 1 1 92px;
+  min-width: 92px;
+  padding: 5px 7px;
+  font-family: Menlo, monospace;
+  font-size: 10px;
+}
+
+.color-swatches {
+  display: flex;
+  flex: 1 0 100%;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.color-swatch {
+  flex: 0 0 24px;
+  width: 24px;
+  min-height: 24px;
+  margin: 0 5px 5px 0;
+  padding: 0;
+  border: 1px solid #5a5a62;
+  border-radius: 4px;
 }
 
 .number-control {

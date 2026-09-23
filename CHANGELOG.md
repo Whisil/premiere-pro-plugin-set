@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.15.2 - Unreleased
+
+- Replace the fragile two-column effect list with a compact wrapping picker and
+  a full-width inspector so filtered effects remain visible in Premiere UXP.
+- Add host-layout regression checks for picker and inspector ordering.
+- Replace unsupported native color inputs with editable hex values, previews,
+  and swatches from the effect's selected MoneyMoves palette.
+
 ## 0.15.1 - Unreleased
 
 - Package all 12 optimized Apple Silicon native effects as one checksummed,

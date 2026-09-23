@@ -52,7 +52,7 @@ unsaved projects and prevent stale plugin state from being restored.
 
 The current panel package is:
 
-`artifacts/releases/MoneyMoves-Toolkit-0.15.1.ccx`
+`artifacts/releases/MoneyMoves-Toolkit-0.15.2.ccx`
 
 1. Quit Premiere Pro.
 2. Open **Terminal**.
@@ -61,7 +61,7 @@ The current panel package is:
    ```sh
    cd "/Users/davidgajdamaka/Desktop/code/moneymoves-plugin-set"
    cd artifacts/releases
-   /usr/bin/shasum -a 256 -c MoneyMoves-Toolkit-0.15.1.ccx.sha256
+   /usr/bin/shasum -a 256 -c MoneyMoves-Toolkit-0.15.2.ccx.sha256
    ```
 
    The result must end with `OK`.
@@ -69,7 +69,7 @@ The current panel package is:
 4. Normally, install the `.ccx` through Adobe's Unified Plugin Installer Agent:
 
    ```sh
-   CCX="/Users/davidgajdamaka/Desktop/code/moneymoves-plugin-set/artifacts/releases/MoneyMoves-Toolkit-0.15.1.ccx"
+   CCX="/Users/davidgajdamaka/Desktop/code/moneymoves-plugin-set/artifacts/releases/MoneyMoves-Toolkit-0.15.2.ccx"
    sudo "$UPIA" --install "$CCX"
    ```
 
@@ -84,7 +84,7 @@ The current panel package is:
 
 The `.ccx` contains the UXP panel. The production native-effect archive is:
 
-`artifacts/releases/MoneyMoves-Native-Effects-0.15.1.zip`
+`artifacts/releases/MoneyMoves-Native-Effects-0.15.2.zip`
 
 Developers can rebuild and verify it with:
 

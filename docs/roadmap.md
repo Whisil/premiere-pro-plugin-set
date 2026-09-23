@@ -77,6 +77,9 @@ tooling outside Premiere.
 - Panel 0.15.1 accommodates Adobe's `AE.` and `PR.` video-filter namespace
   prefixes. Host testing must confirm which form Premiere 25.6.4 actually
   reports for MoneyMoves; the adapter now accepts either form.
+- Panel 0.15.2 replaces the fragile side-by-side effect browser with a compact
+  wrapping picker and full-width inspector for reliable narrow and floating
+  UXP layouts. Host visual approval remains required.
 - Reproducible ten-frame ProRes 4444 alpha feasibility artifact.
 
 ## Phase 0 gates
