@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { EFFECT_REGISTRY } from "@moneymoves/contracts";
 import {
-  filterEffects,
   isNativeEffectAvailable,
-  selectedVisibleEffect,
+  nextExpandedEffect,
 } from "./effect-browser.js";
 
 const installed = EFFECT_REGISTRY.filter(
@@ -11,25 +10,22 @@ const installed = EFFECT_REGISTRY.filter(
 );
 
 describe("effect browser", () => {
-  it("filters the visible list by name", () => {
-    const visible = filterEffects(installed, "ASCII");
-    expect(visible.map((effect) => effect.name)).toEqual(["ASCII"]);
-  });
-
-  it("shows the filtered result in the inspector", () => {
-    const visible = filterEffects(installed, "ASCII");
+  it("opens one effect and closes it when clicked again", () => {
+    expect(nextExpandedEffect(undefined, "com.moneymoves.rgb-shift")).toBe(
+      "com.moneymoves.rgb-shift",
+    );
     expect(
-      selectedVisibleEffect(visible, "com.moneymoves.rgb-shift")?.name,
-    ).toBe("ASCII");
-  });
-
-  it("does not show an unrelated inspector for no results", () => {
-    expect(
-      selectedVisibleEffect(
-        filterEffects(installed, "not an effect"),
+      nextExpandedEffect(
+        "com.moneymoves.rgb-shift",
         "com.moneymoves.rgb-shift",
       ),
     ).toBeUndefined();
+    expect(
+      nextExpandedEffect(
+        "com.moneymoves.rgb-shift",
+        "com.moneymoves.frame-gate",
+      ),
+    ).toBe("com.moneymoves.frame-gate");
   });
 
   it("does not treat the registry as proof that native effects are installed", () => {

@@ -38,16 +38,14 @@ import {
   waitForRenderJob,
 } from "./renderer.js";
 import {
-  filterEffects,
   isNativeEffectAvailable,
-  selectedVisibleEffect,
+  nextExpandedEffect,
 } from "./effect-browser.js";
 import { getRuntimeInfo } from "./runtime-info.js";
 
 type Notice = { tone: "info" | "success" | "error"; message: string };
 type PanelView = "effects" | "generate" | "diagnostics";
 
-const PANEL_EFFECT_KEY = "moneymoves.panel.effect";
 const PANEL_VIEW_KEY = "moneymoves.panel.view";
 const PANEL_PALETTE_KEY = "moneymoves.panel.palette";
 
@@ -62,22 +60,6 @@ function storedValue(key: string, fallback: string): string {
 function storedPanelView(): PanelView {
   const value = storedValue(PANEL_VIEW_KEY, "effects");
   return value === "generate" || value === "diagnostics" ? value : "effects";
-}
-
-function storedEffectMatchName(): string {
-  try {
-    return localStorage.getItem(PANEL_EFFECT_KEY) ?? "com.moneymoves.rgb-shift";
-  } catch {
-    return "com.moneymoves.rgb-shift";
-  }
-}
-
-function persistEffectMatchName(matchName: string): void {
-  try {
-    localStorage.setItem(PANEL_EFFECT_KEY, matchName);
-  } catch {
-    // Browser preview or a restricted UXP host can still use the panel.
-  }
 }
 
 function parameterState(
@@ -140,14 +122,6 @@ function selectionCopy(selection: SelectionSummary | undefined): string {
   if (!selection || selection.videoClips === 0) return "Select a video clip";
   if (selection.videoClips === 1) return "1 clip selected";
   return `${selection.videoClips} clips selected`;
-}
-
-function appliedCopy(state: EffectSelectionState | undefined): string {
-  if (!state || state.selectedClips === 0 || state.state === "none") {
-    return "Off";
-  }
-  if (state.state === "all") return "On";
-  return `On ${state.appliedClips}/${state.selectedClips}`;
 }
 
 interface EffectParameterControlProps {
@@ -461,10 +435,7 @@ export function App() {
   const [durationSeconds, setDurationSeconds] = useState(3);
   const [sequenceName, setSequenceName] = useState("Manual output");
   const [token, setToken] = useState(getRendererToken);
-  const [selectedMatchName, setSelectedMatchName] = useState(
-    storedEffectMatchName,
-  );
-  const [effectQuery, setEffectQuery] = useState("");
+  const [expandedMatchName, setExpandedMatchName] = useState<string>();
   const [installedMatchNames, setInstalledMatchNames] = useState<string[]>([]);
   const [nativeDetection, setNativeDetection] = useState<
     "checking" | "ready" | "error"
@@ -479,26 +450,6 @@ export function App() {
     () => EFFECT_REGISTRY.filter((effect) => effect.status === "available"),
     [],
   );
-  const filteredEffects = useMemo(() => {
-    return filterEffects(listedEffects, effectQuery);
-  }, [effectQuery, listedEffects]);
-  const selectedEffect = selectedVisibleEffect(
-    filteredEffects,
-    selectedMatchName,
-  );
-  const selectedIsInstalled = selectedEffect
-    ? isNativeEffectAvailable(selectedEffect, installedMatchNames)
-    : false;
-  const selectedState = selectedEffect
-    ? effectStates[selectedEffect.matchName]
-    : undefined;
-  const selectedIsOn =
-    selectedState?.state === "all" || selectedState?.state === "some";
-
-  useEffect(() => {
-    if (selectedEffect) persistEffectMatchName(selectedEffect.matchName);
-  }, [selectedEffect]);
-
   useEffect(() => {
     try {
       localStorage.setItem(PANEL_VIEW_KEY, view);
@@ -507,6 +458,15 @@ export function App() {
       // Persistence is optional in restricted previews.
     }
   }, [view, paletteId]);
+
+  useEffect(() => {
+    if (!notice.message) return;
+    const timeout = window.setTimeout(
+      () => setNotice({ tone: "info", message: "" }),
+      notice.tone === "error" ? 6000 : 2600,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
 
   useEffect(() => {
     let cancelled = false;
@@ -652,7 +612,6 @@ export function App() {
   }
 
   function applyNamed(effect: EffectDefinition): void {
-    setSelectedMatchName(effect.matchName);
     if (!isNativeEffectAvailable(effect, installedMatchNames)) {
       setNotice({
         tone: "error",
@@ -675,7 +634,9 @@ export function App() {
   }
 
   function chooseEffect(effect: EffectDefinition): void {
-    setSelectedMatchName(effect.matchName);
+    setExpandedMatchName((current) =>
+      nextExpandedEffect(current, effect.matchName),
+    );
   }
 
   function removeSelected(effect: EffectDefinition): void {
@@ -687,6 +648,15 @@ export function App() {
         message: `Removed ${effect.name} from ${count} clip${count === 1 ? "" : "s"}.`,
       });
     });
+  }
+
+  function toggleEffect(
+    effect: EffectDefinition,
+    state: EffectSelectionState | undefined,
+  ): void {
+    const isOn = state?.state === "all" || state?.state === "some";
+    if (isOn) removeSelected(effect);
+    else applyNamed(effect);
   }
 
   async function syncOutputToSequence(): Promise<void> {
@@ -829,7 +799,7 @@ export function App() {
       </nav>
 
       {notice.message ? (
-        <p className={`notice ${notice.tone}`}>{notice.message}</p>
+        <p className={`toast ${notice.tone}`}>{notice.message}</p>
       ) : null}
 
       {view === "effects" ? (
@@ -841,18 +811,6 @@ export function App() {
             </p>
           ) : (
             <>
-              <div className="effect-search">
-                <span aria-hidden="true">⌕</span>
-                <input
-                  aria-label="Search effects"
-                  placeholder="Search effects"
-                  type="search"
-                  value={effectQuery}
-                  onChange={(event) => setEffectQuery(event.target.value)}
-                />
-                <span className="effect-count">{filteredEffects.length}</span>
-              </div>
-
               {nativeDetection === "checking" ? (
                 <p className="notice">Checking native effects in Premiere…</p>
               ) : null}
@@ -884,253 +842,208 @@ export function App() {
                 </div>
               ) : null}
 
-              <div className="effect-picker" aria-label="Effect library">
-                {filteredEffects.map((effect) => {
+              <div className="effect-list">
+                {listedEffects.map((effect) => {
                   const state = effectStates[effect.matchName];
-                  const isSelected =
-                    effect.matchName === selectedEffect?.matchName;
                   const isOn =
                     state?.state === "all" || state?.state === "some";
+                  const isExpanded = expandedMatchName === effect.matchName;
                   const installed = isNativeEffectAvailable(
                     effect,
                     installedMatchNames,
                   );
                   return (
-                    <button
+                    <div
                       className={
-                        isSelected ? "effect-chip selected" : "effect-chip"
+                        isExpanded
+                          ? "effect-accordion expanded"
+                          : "effect-accordion"
                       }
-                      uxp-variant="action"
-                      disabled={busy}
-                      onClick={() => chooseEffect(effect)}
                       key={effect.matchName}
-                      type="button"
                     >
-                      <span className={isOn ? "state-dot on" : "state-dot"} />
-                      <strong>{effect.name}</strong>
-                      <span
-                        className={
-                          installed
-                            ? isOn
-                              ? "mini-status on"
-                              : "mini-status"
-                            : nativeDetection === "ready"
-                              ? "mini-status missing"
-                              : "mini-status"
-                        }
-                      >
-                        {installed
-                          ? appliedCopy(state)
-                          : nativeDetection === "checking"
-                            ? "Checking"
-                            : nativeDetection === "error"
-                              ? "Unknown"
-                              : "Missing"}
-                      </span>
-                    </button>
+                      <div className="effect-row">
+                        <button
+                          className="effect-disclosure"
+                          disabled={busy}
+                          onClick={() => chooseEffect(effect)}
+                          type="button"
+                        >
+                          <span className="effect-chevron">
+                            {isExpanded ? "▾" : "▸"}
+                          </span>
+                          <span className="effect-row-copy">
+                            <strong>{effect.name}</strong>
+                            <small>{effect.category}</small>
+                          </span>
+                        </button>
+                        {!installed && nativeDetection === "ready" ? (
+                          <span className="effect-unavailable">Missing</span>
+                        ) : null}
+                        <button
+                          className={
+                            isOn ? "effect-toggle on" : "effect-toggle"
+                          }
+                          disabled={
+                            busy || !selection?.videoClips || !installed
+                          }
+                          onClick={() => toggleEffect(effect, state)}
+                          title={`Turn ${effect.name} ${isOn ? "off" : "on"}`}
+                          type="button"
+                        >
+                          <span className="toggle-track">
+                            <span className="toggle-knob" />
+                          </span>
+                          <span className="toggle-label">
+                            {isOn ? "On" : "Off"}
+                          </span>
+                        </button>
+                      </div>
+
+                      {isExpanded ? (
+                        <div className="effect-details">
+                          <p className="effect-description">
+                            {effect.description}
+                          </p>
+
+                          {!installed && nativeDetection === "ready" ? (
+                            <p className="inspector-missing">
+                              Reinstall the MoneyMoves native effects, then
+                              restart Premiere.
+                            </p>
+                          ) : installed && isOn ? (
+                            <div className="effect-editor">
+                              {effect.presets.length > 0 ? (
+                                <section className="inspector-section">
+                                  <h3>Presets</h3>
+                                  <div className="preset-row">
+                                    {effect.presets.map((preset) => (
+                                      <button
+                                        className="preset-button"
+                                        disabled={busy}
+                                        key={preset.id}
+                                        onClick={() =>
+                                          void run(async () => {
+                                            await applyEffectPreset(preset);
+                                            await refreshStates();
+                                            setNotice({
+                                              tone: "success",
+                                              message: `${preset.name} applied.`,
+                                            });
+                                          })
+                                        }
+                                        type="button"
+                                      >
+                                        {preset.name}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </section>
+                              ) : null}
+                              <section className="inspector-section">
+                                <h3>Controls</h3>
+                                {effect.parameters.map((parameter) => (
+                                  <EffectParameterControl
+                                    definition={effect}
+                                    disabled={busy}
+                                    effectState={state}
+                                    key={parameter.key}
+                                    parameter={parameter}
+                                    onSetValue={(nextParameter, value) =>
+                                      void run(async () => {
+                                        await setEffectParameter(
+                                          effect,
+                                          nextParameter,
+                                          value,
+                                        );
+                                        await refreshStates();
+                                        setNotice({
+                                          tone: "info",
+                                          message: "",
+                                        });
+                                      })
+                                    }
+                                    onToggleAnimation={(
+                                      nextParameter,
+                                      enabled,
+                                    ) =>
+                                      void run(async () => {
+                                        await setParameterTimeVarying(
+                                          effect,
+                                          nextParameter,
+                                          enabled,
+                                        );
+                                        await refreshStates();
+                                        setNotice({
+                                          tone: "success",
+                                          message: enabled
+                                            ? `${nextParameter.label} animation enabled.`
+                                            : `${nextParameter.label} animation disabled.`,
+                                        });
+                                      })
+                                    }
+                                    onToggleKeyframe={(nextParameter) =>
+                                      void run(async () => {
+                                        const result =
+                                          await toggleKeyframeAtPlayhead(
+                                            effect,
+                                            nextParameter,
+                                          );
+                                        await refreshStates();
+                                        setNotice({
+                                          tone: "success",
+                                          message: `${nextParameter.label} keyframe ${result}.`,
+                                        });
+                                      })
+                                    }
+                                    onNavigateKeyframe={(
+                                      nextParameter,
+                                      direction,
+                                    ) =>
+                                      void run(async () => {
+                                        const moved = await navigateKeyframe(
+                                          effect,
+                                          nextParameter,
+                                          direction,
+                                        );
+                                        setNotice({
+                                          tone: moved ? "info" : "error",
+                                          message: moved
+                                            ? ""
+                                            : `No ${direction} ${nextParameter.label} keyframe.`,
+                                        });
+                                      })
+                                    }
+                                    onSetInterpolation={(
+                                      nextParameter,
+                                      interpolation,
+                                    ) =>
+                                      void run(async () => {
+                                        await setKeyframeInterpolation(
+                                          effect,
+                                          nextParameter,
+                                          interpolation,
+                                        );
+                                        setNotice({
+                                          tone: "success",
+                                          message: `${nextParameter.label} keyframe set to ${interpolation}.`,
+                                        });
+                                      })
+                                    }
+                                  />
+                                ))}
+                              </section>
+                            </div>
+                          ) : installed ? (
+                            <p className="effect-off-help">
+                              Turn this effect on to edit its controls.
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
                   );
                 })}
-                {filteredEffects.length === 0 ? (
-                  <p className="no-results">No matching effects.</p>
-                ) : null}
               </div>
-
-              {selectedEffect ? (
-                <div className="effect-inspector">
-                  <header className="inspector-heading">
-                    <div>
-                      <span className="category-label">
-                        {selectedEffect.category}
-                      </span>
-                      <h2>{selectedEffect.name}</h2>
-                      <p>{selectedEffect.description}</p>
-                    </div>
-                    <span
-                      className={
-                        !selectedIsInstalled && nativeDetection === "ready"
-                          ? "status-chip missing"
-                          : selectedIsOn
-                            ? "status-chip on"
-                            : "status-chip"
-                      }
-                    >
-                      {selectedIsInstalled
-                        ? appliedCopy(selectedState)
-                        : nativeDetection === "checking"
-                          ? "Checking"
-                          : nativeDetection === "error"
-                            ? "Unknown"
-                            : "Not installed"}
-                    </span>
-                  </header>
-
-                  <div className="inspector-actions">
-                    {selectedIsInstalled && selectedIsOn ? (
-                      <button
-                        className="button-danger"
-                        disabled={busy}
-                        onClick={() => removeSelected(selectedEffect)}
-                        type="button"
-                      >
-                        Remove from selection
-                      </button>
-                    ) : (
-                      <button
-                        className="button-primary"
-                        disabled={
-                          busy || !selection?.videoClips || !selectedIsInstalled
-                        }
-                        onClick={() => applyNamed(selectedEffect)}
-                        type="button"
-                      >
-                        Apply to {selection?.videoClips ?? 0} clip
-                        {selection?.videoClips === 1 ? "" : "s"}
-                      </button>
-                    )}
-                    {selectedIsInstalled && selectedState?.state === "some" ? (
-                      <button
-                        className="button-secondary"
-                        disabled={busy}
-                        onClick={() => applyNamed(selectedEffect)}
-                        type="button"
-                      >
-                        Apply to missing clips
-                      </button>
-                    ) : null}
-                  </div>
-
-                  {!selectedIsInstalled && nativeDetection === "ready" ? (
-                    <p className="inspector-missing">
-                      Premiere does not report this native effect. Reinstall the
-                      MoneyMoves native bundles and restart Premiere.
-                    </p>
-                  ) : null}
-
-                  {selectedIsInstalled &&
-                  selectedIsOn &&
-                  selectedEffect.parameters.length > 0 ? (
-                    <div className="effect-editor">
-                      {selectedEffect.presets.length > 0 ? (
-                        <section className="inspector-section">
-                          <h3>Presets</h3>
-                          <div className="preset-row">
-                            {selectedEffect.presets.map((preset) => (
-                              <button
-                                className="preset-button"
-                                disabled={busy}
-                                key={preset.id}
-                                onClick={() =>
-                                  void run(async () => {
-                                    await applyEffectPreset(preset);
-                                    await refreshStates();
-                                    setNotice({
-                                      tone: "success",
-                                      message: `${preset.name} applied.`,
-                                    });
-                                  })
-                                }
-                                type="button"
-                              >
-                                {preset.name}
-                              </button>
-                            ))}
-                          </div>
-                        </section>
-                      ) : null}
-                      <section className="inspector-section">
-                        <h3>Controls</h3>
-                        {selectedEffect.parameters.map((parameter) => (
-                          <EffectParameterControl
-                            definition={selectedEffect}
-                            disabled={busy}
-                            effectState={selectedState}
-                            key={parameter.key}
-                            parameter={parameter}
-                            onSetValue={(nextParameter, value) =>
-                              void run(async () => {
-                                await setEffectParameter(
-                                  selectedEffect,
-                                  nextParameter,
-                                  value,
-                                );
-                                await refreshStates();
-                                setNotice({ tone: "info", message: "" });
-                              })
-                            }
-                            onToggleAnimation={(nextParameter, enabled) =>
-                              void run(async () => {
-                                await setParameterTimeVarying(
-                                  selectedEffect,
-                                  nextParameter,
-                                  enabled,
-                                );
-                                await refreshStates();
-                                setNotice({
-                                  tone: "success",
-                                  message: enabled
-                                    ? `${nextParameter.label} animation enabled.`
-                                    : `${nextParameter.label} animation disabled.`,
-                                });
-                              })
-                            }
-                            onToggleKeyframe={(nextParameter) =>
-                              void run(async () => {
-                                const result = await toggleKeyframeAtPlayhead(
-                                  selectedEffect,
-                                  nextParameter,
-                                );
-                                await refreshStates();
-                                setNotice({
-                                  tone: "success",
-                                  message: `${nextParameter.label} keyframe ${result}.`,
-                                });
-                              })
-                            }
-                            onNavigateKeyframe={(nextParameter, direction) =>
-                              void run(async () => {
-                                const moved = await navigateKeyframe(
-                                  selectedEffect,
-                                  nextParameter,
-                                  direction,
-                                );
-                                setNotice({
-                                  tone: moved ? "info" : "error",
-                                  message: moved
-                                    ? ""
-                                    : `No ${direction} ${nextParameter.label} keyframe.`,
-                                });
-                              })
-                            }
-                            onSetInterpolation={(
-                              nextParameter,
-                              interpolation,
-                            ) =>
-                              void run(async () => {
-                                await setKeyframeInterpolation(
-                                  selectedEffect,
-                                  nextParameter,
-                                  interpolation,
-                                );
-                                setNotice({
-                                  tone: "success",
-                                  message: `${nextParameter.label} keyframe set to ${interpolation}.`,
-                                });
-                              })
-                            }
-                          />
-                        ))}
-                      </section>
-                    </div>
-                  ) : selectedIsInstalled ? (
-                    <div className="inspector-empty">
-                      <span aria-hidden="true">＋</span>
-                      <p>
-                        Apply this effect to unlock its presets and controls.
-                      </p>
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
             </>
           )}
         </section>
